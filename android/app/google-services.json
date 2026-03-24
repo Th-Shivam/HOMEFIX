@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1096261292486",
+    "project_id": "homefixvit",
+    "storage_bucket": "homefixvit.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096261292486:android:1727599ed353f577caa2c7",
+        "android_client_info": {
+          "package_name": "com.homefixpro.homefix_pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1096261292486-bkfe9tof3eo90fu7ij3qnms7j0adjamt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.homefixpro.homefix_pro",
+            "certificate_hash": "2664414ca8bca7c898f907f93c91e52f0665605d"
+          }
+        },
+        {
+          "client_id": "1096261292486-ekukrcbqdedova7iibumm126g5m99lhk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXkV9X7mPwBnjI7wWpKFZsz9WyF5Nuusc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096261292486-ekukrcbqdedova7iibumm126g5m99lhk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

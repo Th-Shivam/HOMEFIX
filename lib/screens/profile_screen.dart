@@ -260,13 +260,15 @@ class ProfileScreen extends StatelessWidget {
                     gradient: const LinearGradient(
                       colors: [Color(0xFFE53935), Color(0xFFEF5350)],
                     ),
-                    onPressed: () {
-                      authProvider.logout();
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
+                    onPressed: () async {
+                      await authProvider.logout();
+                      if (context.mounted) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                          (route) => false,
+                        );
+                      }
                     },
                   ),
                 ),

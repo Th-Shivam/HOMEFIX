@@ -33,10 +33,19 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Navigate after delay
-    Future.delayed(const Duration(seconds: 3), () {
+    // Navigate after delay, but only once Firebase auth state is resolved
+    Future.delayed(const Duration(seconds: 3), () async {
       if (!mounted) return;
       final authProvider = context.read<AuthProvider>();
+
+      // Wait up to 5s for Firebase to resolve auth state
+      int waited = 0;
+      while (!authProvider.isAuthReady && waited < 50) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        waited++;
+      }
+
+      if (!mounted) return;
       if (authProvider.isLoggedIn) {
         Navigator.pushReplacementNamed(context, '/main');
       } else if (authProvider.hasSeenOnboarding) {
