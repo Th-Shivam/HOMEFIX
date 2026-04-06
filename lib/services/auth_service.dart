@@ -32,6 +32,27 @@ class AuthService {
     return regex.hasMatch(email);
   }
 
+  /// Safely saves the user profile to Firestore.
+  /// Does not duplicate or overwrite if the user already exists.
+  Future<void> saveUserToFirestore({
+    required String uid,
+    required String name,
+    required String email,
+  }) async {
+    final userRef = _firestore.collection('users').doc(uid);
+    final docSnapshot = await userRef.get();
+
+    if (!docSnapshot.exists) {
+      await userRef.set({
+        'uid': uid,
+        'name': name,
+        'email': email,
+        'authProvider': 'email',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   /// Creates a new account with email + password.
   /// Validates inputs and saves extra profile data to Firestore.
   Future<UserModel> signUpWithEmail({
@@ -62,16 +83,12 @@ class AuthService {
       // 3. Set display name so it shows in Firebase Console
       await user.updateDisplayName(name.trim());
 
-      // 4. Save extra info in Firestore
-      await _firestore.collection('users').doc(user.uid).set({
-        'uid': user.uid,
-        'name': name.trim(),
-        'email': email.trim(),
-        'phone': phone.trim(),
-        'photoUrl': null,
-        'provider': 'email',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      // 4. Save user data to Firestore
+      await saveUserToFirestore(
+        uid: user.uid,
+        name: name.trim(),
+        email: email.trim(),
+      );
 
       return UserModel(
         uid: user.uid,
