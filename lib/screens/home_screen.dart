@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../providers/subscription_provider.dart';
 import '../widgets/service_card.dart';
 import '../widgets/gradient_button.dart';
+import 'subscription_form_screen.dart';
+import 'workers_screen.dart';
 
 /// Home dashboard with welcome header, service cards, and subscription status
 class HomeScreen extends StatelessWidget {
@@ -250,7 +252,8 @@ class HomeScreen extends StatelessWidget {
                               Navigator.pushNamed(context, '/service-request',
                                   arguments: 'electrician');
                             } else {
-                              Navigator.pushNamed(context, '/subscription');
+                              debugPrint('Navigation: Home Screen -> Subscription Form');
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionFormScreen()));
                             }
                           },
                         ),
@@ -267,7 +270,8 @@ class HomeScreen extends StatelessWidget {
                               Navigator.pushNamed(context, '/service-request',
                                   arguments: 'plumber');
                             } else {
-                              Navigator.pushNamed(context, '/subscription');
+                              debugPrint('Navigation: Home Screen -> Subscription Form');
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionFormScreen()));
                             }
                           },
                         ),
@@ -299,9 +303,30 @@ class HomeScreen extends StatelessWidget {
                           icon: Icons.star_rounded,
                           gradient: AppConstants.accentGradient,
                           onPressed: () {
-                            Navigator.pushNamed(context, '/subscription');
+                            debugPrint('Navigation: Home Screen -> Subscription Form');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const SubscriptionFormScreen()),
+                            );
                           },
                         ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: GradientButton(
+                    text: 'Find Workers',
+                    icon: Icons.search_rounded,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const WorkersScreen()),
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 28),
 
