@@ -12,6 +12,7 @@ import 'screens/home_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/service_request_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/pending_verification_screen.dart';
 
 /// Main app scaffold with bottom navigation
 class MainScaffold extends StatefulWidget {
@@ -151,6 +152,7 @@ class HomefixProApp extends StatelessWidget {
           '/subscription': (context) => const SubscriptionScreen(),
           '/service-request': (context) => const ServiceRequestScreen(),
           '/profile': (context) => const ProfileScreen(),
+          '/pending': (context) => const PendingVerificationScreen(),
         },
       ),
     );
