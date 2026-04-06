@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../providers/auth_provider.dart';
+import '../providers/subscription_provider.dart';
+import '../services/subscription_service.dart';
 
 /// Splash screen with animated logo and auto-navigation
 class SplashScreen extends StatefulWidget {
@@ -47,7 +49,18 @@ class _SplashScreenState extends State<SplashScreen>
 
       if (!mounted) return;
       if (authProvider.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, '/main');
+        // Check payment verification status
+        final paymentStatus = await SubscriptionService().getPaymentStatus();
+        if (!mounted) return;
+        
+        if (paymentStatus == 'pending') {
+          Navigator.pushReplacementNamed(context, '/pending');
+        } else {
+          // Sync with Firestore so UI updates accordingly
+          await context.read<SubscriptionProvider>().syncWithFirestore();
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/main');
+        }
       } else if (authProvider.hasSeenOnboarding) {
         Navigator.pushReplacementNamed(context, '/login');
       } else {
