@@ -32,43 +32,19 @@ class ServiceProvider extends ChangeNotifier {
     try {
       var ticket = await _workflowService.createTicket(
         serviceType: type,
-        issueImageReferences: issueImageReference == null || issueImageReference.isEmpty
-            ? const []
-            : [issueImageReference],
+        issueImageReferences:
+            issueImageReference?.isNotEmpty == true ? [issueImageReference!] : const [],
       );
 
       _currentRequest = ticket;
       notifyListeners();
 
-      if (ticket.status == TicketStatus.pendingReview) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        ticket = await _workflowService.transitionStatus(
-          ticket: ticket,
-          to: TicketStatus.assigned,
-          role: TicketActorRole.reviewer,
-        );
-        _currentRequest = ticket.copyWith(
-          technicianName: _pickTechnician(type),
-        );
-        notifyListeners();
-
-        await Future.delayed(const Duration(milliseconds: 500));
-        ticket = await _workflowService.transitionStatus(
-          ticket: _currentRequest!,
-          to: TicketStatus.accepted,
-          role: TicketActorRole.technician,
-        );
-        _currentRequest = ticket;
-        notifyListeners();
-
-        await Future.delayed(const Duration(milliseconds: 500));
-        _currentRequest = await _workflowService.transitionStatus(
-          ticket: ticket,
-          to: TicketStatus.onTheWay,
-          role: TicketActorRole.technician,
-        );
-        notifyListeners();
-      }
+      ticket = await _workflowService.autoDispatchToOnTheWay(
+        ticket: ticket,
+        technicianName: _pickTechnician(type),
+      );
+      _currentRequest = ticket;
+      notifyListeners();
     } catch (e) {
       _lastError = e.toString();
     } finally {
@@ -94,6 +70,25 @@ class ServiceProvider extends ChangeNotifier {
         to: nextStatus,
         role: role,
       );
+    } catch (e) {
+      _lastError = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> completeAndRequestVerification() async {
+    final current = _currentRequest;
+    if (current == null || current.status != TicketStatus.inProgress) return;
+
+    _isLoading = true;
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      _currentRequest =
+          await _workflowService.completeAndSendForCustomerVerification(current);
     } catch (e) {
       _lastError = e.toString();
     } finally {

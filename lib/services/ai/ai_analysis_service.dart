@@ -31,8 +31,10 @@ class MockAiAnalysisService implements AiAnalysisService {
   }) async {
     await Future.delayed(const Duration(milliseconds: 900));
 
-    final seed = secureImageUris.join('|').runes.fold<int>(0, (a, b) => a + b);
-    final urgency = ((seed % 100) + 1).clamp(1, 100);
+    final seed = secureImageUris.isEmpty
+        ? DateTime.now().millisecond
+        : secureImageUris.first.length * secureImageUris.length;
+    final urgency = (seed % 100) + 1;
     final category = serviceType == ServiceType.electrician
         ? 'Electrical Fault Diagnosis'
         : 'Plumbing Leakage Inspection';
@@ -41,7 +43,7 @@ class MockAiAnalysisService implements AiAnalysisService {
       urgencyScore: urgency,
       suggestedIssueCategory: category,
       confidenceScore: 0.7 + ((seed % 25) / 100),
-      summary: 'AI detected probable ${serviceType.name} issue. Review and assign priority.',
+      summary: 'AI has detected a probable ${serviceType.name} issue. Review and assign priority.',
     );
   }
 }

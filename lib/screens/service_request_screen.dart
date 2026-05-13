@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../models/service_request_model.dart';
 import '../providers/service_provider.dart';
+import '../services/ticket_workflow_service.dart';
 import '../widgets/gradient_button.dart';
 
 /// AI-powered service request ticket screen
@@ -116,7 +117,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
           ),
           const SizedBox(height: 8),
           const Text(
-            'Upload an issue image (optional) to trigger AI analysis and fast assignment.',
+            'Upload an issue image (optional) to trigger AI analysis and smarter prioritization.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: AppConstants.grey600),
           ),
@@ -434,16 +435,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
             GradientButton(
               text: 'Complete Work',
               icon: Icons.task_alt_rounded,
-              onPressed: () async {
-                await provider.updateStatus(
-                  TicketStatus.completed,
-                  role: TicketActorRole.technician,
-                );
-                await provider.updateStatus(
-                  TicketStatus.customerVerification,
-                  role: TicketActorRole.system,
-                );
-              },
+              onPressed: provider.completeAndRequestVerification,
             ),
           ],
         );
@@ -622,21 +614,35 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
       TicketStatus.closed,
     ];
 
+    // Optional states are shown only if they happened (or are current) while
+    // preserving the fixed baseline lifecycle ordering above.
     if (ticket.statusTimestamps.containsKey(TicketStatus.waitingForParts) ||
         ticket.status == TicketStatus.waitingForParts) {
-      stages.insert(stages.indexOf(TicketStatus.completed), TicketStatus.waitingForParts);
+      final completedIndex = stages.indexOf(TicketStatus.completed);
+      if (completedIndex != -1) {
+        stages.insert(completedIndex, TicketStatus.waitingForParts);
+      }
     }
     if (ticket.statusTimestamps.containsKey(TicketStatus.reopened) ||
         ticket.status == TicketStatus.reopened) {
-      stages.insert(stages.indexOf(TicketStatus.assigned), TicketStatus.reopened);
+      final assignedIndex = stages.indexOf(TicketStatus.assigned);
+      if (assignedIndex != -1 && !stages.contains(TicketStatus.reopened)) {
+        stages.insert(assignedIndex, TicketStatus.reopened);
+      }
     }
     return stages;
   }
 
   Color _urgencyColor(int urgency) {
-    if (urgency > 85) return Colors.red.shade700;
-    if (urgency > 65) return Colors.deepOrange;
-    if (urgency > 40) return Colors.amber.shade700;
+    if (urgency > TicketWorkflowService.criticalUrgencyMinScore) {
+      return Colors.red.shade700;
+    }
+    if (urgency > TicketWorkflowService.highUrgencyMinScore) {
+      return Colors.deepOrange;
+    }
+    if (urgency > TicketWorkflowService.mediumUrgencyMinScore) {
+      return Colors.amber.shade700;
+    }
     return AppConstants.successGreen;
   }
 
@@ -654,8 +660,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
   }
 
   String _formatDate(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
-    return '${value.day}/${value.month} $hour:$minute';
+    return '$day/$month $hour:$minute';
   }
 }

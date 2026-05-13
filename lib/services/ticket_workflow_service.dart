@@ -23,6 +23,9 @@ class TicketWorkflowService {
   final AiAnalysisService _aiAnalysisService;
   final TicketMediaStorageService _mediaStorageService;
   final TicketNotificationHook _notificationHook;
+  static const int criticalUrgencyMinScore = 85;
+  static const int highUrgencyMinScore = 65;
+  static const int mediumUrgencyMinScore = 40;
 
   static const Map<TicketStatus, Set<TicketStatus>> allowedTransitions = {
     TicketStatus.requestRaised: {TicketStatus.aiAnalysis},
@@ -66,9 +69,9 @@ class TicketWorkflowService {
   };
 
   static SeverityLevel severityFromUrgency(int urgency) {
-    if (urgency > 85) return SeverityLevel.critical;
-    if (urgency > 65) return SeverityLevel.high;
-    if (urgency > 40) return SeverityLevel.medium;
+    if (urgency > criticalUrgencyMinScore) return SeverityLevel.critical;
+    if (urgency > highUrgencyMinScore) return SeverityLevel.high;
+    if (urgency > mediumUrgencyMinScore) return SeverityLevel.medium;
     return SeverityLevel.low;
   }
 
@@ -120,6 +123,49 @@ class TicketWorkflowService {
     );
   }
 
+  Future<ServiceRequestModel> autoDispatchToOnTheWay({
+    required ServiceRequestModel ticket,
+    required String technicianName,
+  }) async {
+    if (ticket.status != TicketStatus.pendingReview) {
+      return ticket;
+    }
+
+    final assigned = (await transitionStatus(
+      ticket: ticket,
+      to: TicketStatus.assigned,
+      role: TicketActorRole.reviewer,
+    ))
+        .copyWith(technicianName: technicianName);
+
+    final accepted = await transitionStatus(
+      ticket: assigned,
+      to: TicketStatus.accepted,
+      role: TicketActorRole.technician,
+    );
+
+    return transitionStatus(
+      ticket: accepted,
+      to: TicketStatus.onTheWay,
+      role: TicketActorRole.technician,
+    );
+  }
+
+  Future<ServiceRequestModel> completeAndSendForCustomerVerification(
+    ServiceRequestModel ticket,
+  ) async {
+    final completed = await transitionStatus(
+      ticket: ticket,
+      to: TicketStatus.completed,
+      role: TicketActorRole.technician,
+    );
+    return transitionStatus(
+      ticket: completed,
+      to: TicketStatus.customerVerification,
+      role: TicketActorRole.system,
+    );
+  }
+
   Future<ServiceRequestModel> transitionStatus({
     required ServiceRequestModel ticket,
     required TicketStatus to,
@@ -127,10 +173,10 @@ class TicketWorkflowService {
   }) async {
     final from = ticket.status;
     if (!_canTransition(from, to)) {
-      throw StateError('Invalid transition ${from.wireValue} -> ${to.wireValue}');
+      throw StateError('Invalid transition from ${from.label} to ${to.label}');
     }
     if (!(roleTargets[role]?.contains(to) ?? false)) {
-      throw StateError('Role ${role.name} cannot move ticket to ${to.wireValue}');
+      throw StateError('Role ${role.name} cannot move ticket to ${to.label}');
     }
 
     final timestamps = Map<TicketStatus, DateTime>.from(ticket.statusTimestamps)
