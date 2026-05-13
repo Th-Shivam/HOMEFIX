@@ -1,5 +1,4 @@
 import '../models/subscription_model.dart';
-import '../models/service_request_model.dart';
 
 /// Mock API service that simulates backend calls using Future.delayed
 class MockApiService {
@@ -54,26 +53,6 @@ class MockApiService {
       planType: planType,
       startDate: now,
       expiryDate: expiry,
-    );
-  }
-
-  /// Simulate service request
-  static Future<ServiceRequestModel> requestService(ServiceType type) async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    final techNames = {
-      ServiceType.electrician: ['Rajesh Kumar', 'Amit Sharma', 'Vikram Singh'],
-      ServiceType.plumber: ['Suresh Patel', 'Mohan Das', 'Ravi Verma'],
-    };
-
-    final names = techNames[type]!;
-    final name = names[DateTime.now().millisecond % names.length];
-
-    return ServiceRequestModel(
-      serviceType: type,
-      status: ServiceStatus.technicianOnWay,
-      requestTime: DateTime.now(),
-      technicianName: name,
     );
   }
 }
