@@ -8,6 +8,7 @@ import 'providers/service_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/registration_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/service_request_screen.dart';
@@ -148,6 +149,7 @@ class HomefixProApp extends StatelessWidget {
           '/': (context) => const SplashScreen(),
           '/onboarding': (context) => const OnboardingScreen(),
           '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegistrationScreen(),
           '/main': (context) => const MainScaffold(),
           '/subscription': (context) => const SubscriptionScreen(),
           '/service-request': (context) => const ServiceRequestScreen(),
