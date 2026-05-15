@@ -41,6 +41,8 @@ flutter:
     - assets/qr.png
     - assets/bg-splash.png
     - assets/splash-logo.png
+    - assets/nivasa-login.png
+    - assets/nivasa-login-blur.png
 
 
 
