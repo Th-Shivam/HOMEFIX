@@ -26,6 +26,13 @@ class AuthProvider extends ChangeNotifier {
     _authService.authStateChanges.listen(_onAuthStateChanged);
   }
 
+  String _messageFromException(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '');
+    return message.isEmpty
+        ? 'Something went wrong. Please try again.'
+        : message;
+  }
+
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     if (firebaseUser == null) {
       _user = UserModel.guest;
@@ -69,8 +76,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (e) {
       _errorMessage = AuthService.getErrorMessage(e);
-    } catch (_) {
-      _errorMessage = 'Something went wrong. Please try again.';
+    } catch (e) {
+      _errorMessage = _messageFromException(e);
     }
 
     _isLoading = false;
@@ -97,8 +104,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (e) {
       _errorMessage = AuthService.getErrorMessage(e);
-    } catch (_) {
-      _errorMessage = 'Something went wrong. Please try again.';
+    } catch (e) {
+      _errorMessage = _messageFromException(e);
     }
 
     _isLoading = false;
@@ -135,8 +142,8 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (e) {
       _errorMessage = AuthService.getErrorMessage(e);
-    } catch (_) {
-      _errorMessage = 'Google Sign-In failed. Please try again.';
+    } catch (e) {
+      _errorMessage = _messageFromException(e);
     }
 
     _isLoading = false;
