@@ -34,22 +34,32 @@ class AuthService {
 
   /// Safely saves the user profile to Firestore.
   /// Does not duplicate or overwrite if the user already exists.
-  Future<void> saveUserToFirestore({
+  Future<bool> saveUserToFirestore({
     required String uid,
     required String name,
     required String email,
+    required String phone,
   }) async {
-    final userRef = _firestore.collection('users').doc(uid);
-    final docSnapshot = await userRef.get();
+    try {
+      final userRef = _firestore.collection('users').doc(uid);
+      final docSnapshot = await userRef.get();
 
-    if (!docSnapshot.exists) {
-      await userRef.set({
-        'uid': uid,
-        'name': name,
-        'email': email,
-        'authProvider': 'email',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      if (!docSnapshot.exists) {
+        await userRef.set({
+          'uid': uid,
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'authProvider': 'email',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      return true;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        return false;
+      }
+      rethrow;
     }
   }
 
@@ -88,6 +98,7 @@ class AuthService {
         uid: user.uid,
         name: name.trim(),
         email: email.trim(),
+        phone: phone.trim(),
       );
 
       return UserModel(
@@ -125,9 +136,13 @@ class AuthService {
       );
       final user = credential.user!;
 
-      // Fetch extra profile data from Firestore
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      final data = doc.data();
+      Map<String, dynamic>? data;
+      try {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        data = doc.data();
+      } on FirebaseException catch (e) {
+        if (e.code != 'permission-denied') rethrow;
+      }
 
       return UserModel(
         uid: user.uid,
@@ -177,25 +192,31 @@ class AuthService {
 
     // Step 5: Save / update profile in Firestore
     // merge: true → won't overwrite existing data if the user re-logs in
-    await _firestore
-        .collection('users')
-        .doc(firebaseUser.uid)
-        .set({
-      'uid': firebaseUser.uid,
-      'name': firebaseUser.displayName ?? googleAccount.displayName ?? 'User',
-      'email': firebaseUser.email ?? '',
-      'photoUrl': firebaseUser.photoURL,
-      'phone': '', // Google doesn't provide phone number
-      'provider': 'google',
-      'lastLoginAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    String? existingPhone;
+    try {
+      final userRef = _firestore.collection('users').doc(firebaseUser.uid);
+      final userSnapshot = await userRef.get();
+      existingPhone = userSnapshot.data()?['phone'] as String?;
+
+      await userRef.set({
+        'uid': firebaseUser.uid,
+        'name': firebaseUser.displayName ?? googleAccount.displayName ?? 'User',
+        'email': firebaseUser.email ?? '',
+        'photoUrl': firebaseUser.photoURL,
+        'phone': existingPhone ?? '', // Google doesn't provide phone number
+        'provider': 'google',
+        'lastLoginAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+    }
 
     // Step 6: Return UserModel
     return UserModel(
       uid: firebaseUser.uid,
       name: firebaseUser.displayName ?? 'User',
       email: firebaseUser.email ?? '',
-      phone: '',
+      phone: existingPhone ?? '',
       photoUrl: firebaseUser.photoURL,
       isLoggedIn: true,
     );
@@ -206,9 +227,14 @@ class AuthService {
   /// Builds a [UserModel] from an already-signed-in Firebase user.
   /// Called by AuthProvider at app startup via authStateChanges.
   Future<UserModel> getUserModel(User firebaseUser) async {
-    final doc =
-        await _firestore.collection('users').doc(firebaseUser.uid).get();
-    final data = doc.data();
+    Map<String, dynamic>? data;
+    try {
+      final doc =
+          await _firestore.collection('users').doc(firebaseUser.uid).get();
+      data = doc.data();
+    } on FirebaseException catch (e) {
+      if (e.code != 'permission-denied') rethrow;
+    }
 
     return UserModel(
       uid: firebaseUser.uid,
