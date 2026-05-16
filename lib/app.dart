@@ -15,116 +15,13 @@ import 'screens/service_request_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/pending_verification_screen.dart';
 
-/// Main app scaffold with bottom navigation
-class MainScaffold extends StatefulWidget {
+/// Main app scaffold
+class MainScaffold extends StatelessWidget {
   const MainScaffold({super.key});
 
   @override
-  State<MainScaffold> createState() => _MainScaffoldState();
-}
-
-class _MainScaffoldState extends State<MainScaffold> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    SubscriptionScreen(),
-    ProfileScreen(),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: AppConstants.primaryBlue.withAlpha(15),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  icon: Icons.home_rounded,
-                  label: 'Home',
-                  index: 0,
-                ),
-                _buildNavItem(
-                  icon: Icons.card_membership_rounded,
-                  label: 'Plans',
-                  index: 1,
-                ),
-                _buildNavItem(
-                  icon: Icons.person_rounded,
-                  label: 'Profile',
-                  index: 2,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 20 : 16,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppConstants.primaryBlue.withAlpha(20)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected
-                  ? AppConstants.primaryBlue
-                  : AppConstants.grey600,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppConstants.primaryBlue,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+    return const HomeScreen();
   }
 }
 
