@@ -1,425 +1,773 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/constants.dart';
 import '../providers/auth_provider.dart';
-import '../providers/subscription_provider.dart';
-import '../widgets/service_card.dart';
-import '../widgets/gradient_button.dart';
-import 'subscription_form_screen.dart';
-import 'workers_screen.dart';
 
-/// Home dashboard with welcome header, service cards, and subscription status
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _activityKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final subProvider = context.watch<SubscriptionProvider>();
     final user = authProvider.user;
-    final subscription = subProvider.subscription;
-    final hasSubscription = subProvider.hasActiveSubscription;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFF8FAFF), Color(0xFFEEF2FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      backgroundColor: const Color(0xFF0A0A0C),
+      body: Stack(
+        children: [
+          // Cinematic Background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/nivasa-homescreen.png',
+              fit: BoxFit.cover,
+              color: const Color(0xFF0A0A0C).withOpacity(0.5),
+              colorBlendMode: BlendMode.srcOver,
+            ),
+          ),
+          // Vignette
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.0,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0A0A0C).withOpacity(0.8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Vertical Gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF0A0A0C),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0xFF0A0A0C),
+                  ],
+                  stops: [0.0, 0.2, 0.8, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Main Content
+          Positioned.fill(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: const EdgeInsets.only(top: 80, bottom: 120, left: 24, right: 24),
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeroSection(user.name),
+                    const SizedBox(height: 60),
+                    _buildOSModules(context),
+                    const SizedBox(height: 60),
+                    _buildResidenceFeed(key: _activityKey),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Top Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildHeader(context),
+          ),
+          // Bottom OS Navigation
+          Positioned(
+            bottom: 32,
+            left: 20,
+            right: 20,
+            child: _buildBottomNav(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.only(top: 40, left: 32, right: 32),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF0A0A0C).withOpacity(0.8),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'NIVASA',
+            style: TextStyle(
+              fontFamily: 'Raleway',
+              fontSize: 16,
+              letterSpacing: 6.4,
+              color: Color(0xFFFBF8F4),
+              fontWeight: FontWeight.w300,
+              shadows: [
+                Shadow(color: Color(0x1AFBF8F4), blurRadius: 15),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.person_outline,
+                  color: const Color(0xFFFBF8F4).withOpacity(0.4),
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection(String name) {
+    final firstName = name.isNotEmpty ? name.split(' ').first : 'Guest';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Good Evening, $firstName'.toUpperCase(),
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 9,
+            letterSpacing: 3.6,
+            color: const Color(0xFFA3A19E).withOpacity(0.5),
+            fontWeight: FontWeight.w500,
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Welcome Header ──
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                  decoration: BoxDecoration(
-                    gradient: AppConstants.primaryGradient,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(32),
-                      bottomRight: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppConstants.primaryBlue.withAlpha(50),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Hello, ${user.name.split(' ').first} 👋',
-                                style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'What service do you need today?',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withAlpha(200),
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Avatar
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(40),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.white.withAlpha(60),
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                user.name.isNotEmpty
-                                    ? user.name[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+        const SizedBox(height: 8),
+        const Text(
+          'Welcome Home',
+          style: TextStyle(
+            fontFamily: 'Raleway',
+            fontSize: 36,
+            fontWeight: FontWeight.w200,
+            letterSpacing: 4.32,
+            color: Color(0xFFFBF8F4),
+            height: 1.2,
+            shadows: [
+              Shadow(color: Color(0x1AFBF8F4), blurRadius: 15),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: Colors.white.withOpacity(0.1)),
+            ),
+          ),
+          padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
+          child: Text(
+            'Everything at your residence is running smoothly.',
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 14,
+              fontWeight: FontWeight.w300,
+              color: const Color(0xFFA3A19E).withOpacity(0.7),
+              height: 1.6,
+              letterSpacing: 0.28,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-                      // Subscription status chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withAlpha(40),
+  Widget _buildOSModules(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 24),
+          child: Text(
+            'Residence Services'.toUpperCase(),
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 10,
+              letterSpacing: 4.0,
+              color: const Color(0xFFA3A19E).withOpacity(0.3),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSmokedGlassCard(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/service-request',
+                  arguments: 'plumber',
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(Icons.handyman_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                        Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.1), size: 18),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'MAINTENANCE',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                            color: Color(0xE6FBF8F4),
+                            fontWeight: FontWeight.w300,
                           ),
                         ),
-                        child: Row(
+                        const SizedBox(height: 4),
+                        Text(
+                          'Request structural repairs or routine care',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 10,
+                            color: const Color(0xFFA3A19E).withOpacity(0.4),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                height: 128,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSmokedGlassCard(
+                onTap: () => _showModuleMessage(context, 'Security support is coming soon.'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Icon(Icons.shield_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'SECURITY',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                            color: Color(0xE6FBF8F4),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Home protection',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 10,
+                            color: const Color(0xFFA3A19E).withOpacity(0.4),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                height: 128,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildSmokedGlassCard(
+                onTap: () => _showModuleMessage(context, 'Concierge assistance is coming soon.'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Icon(Icons.auto_awesome_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'CONCIERGE',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                            color: Color(0xE6FBF8F4),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Lifestyle assistance',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 10,
+                            color: const Color(0xFFA3A19E).withOpacity(0.4),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                height: 128,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSmokedGlassCard(
+                onTap: () => _showModuleMessage(context, 'Climate controls are coming soon.'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(Icons.thermostat_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                        Row(
                           children: [
-                            Icon(
-                              hasSubscription
-                                  ? Icons.verified_rounded
-                                  : Icons.info_outline_rounded,
-                              color: hasSubscription
-                                  ? AppConstants.accentGold
-                                  : Colors.white.withAlpha(180),
-                              size: 20,
+                            Text(
+                              '72°F',
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
+                                fontSize: 10,
+                                color: const Color(0xFFFBBC00).withOpacity(0.8),
+                                fontWeight: FontWeight.w300,
+                                letterSpacing: 1.0,
+                              ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                hasSubscription
-                                    ? '${subscription.planName} • Active till ${subscription.formattedExpiry}'
-                                    : 'No active subscription',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white.withAlpha(220),
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFFFBBC00).withOpacity(0.6),
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // ── Active Subscription Details ──
-                if (hasSubscription) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppConstants.successGreen.withAlpha(40),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.shield_rounded,
-                                  color: AppConstants.accentGold, size: 24),
-                              const SizedBox(width: 10),
-                              const Text(
-                                'Active Subscription',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '${subscription.daysRemaining} days left',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            subscription.description,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withAlpha(210),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                // ── Service Cards ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: const Text(
-                    'Our Services',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppConstants.surfaceDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ServiceCard(
-                          title: 'Electrician',
-                          subtitle: 'Wiring, repairs & installations',
-                          icon: Icons.electrical_services_rounded,
-                          isActive: hasSubscription,
-                          onTap: () {
-                            if (hasSubscription) {
-                              Navigator.pushNamed(context, '/service-request',
-                                  arguments: 'electrician');
-                            } else {
-                              debugPrint('Navigation: Home Screen -> Subscription Form');
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionFormScreen()));
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ServiceCard(
-                          title: 'Plumber',
-                          subtitle: 'Pipes, faucets & drains',
-                          icon: Icons.plumbing_rounded,
-                          isActive: hasSubscription,
-                          onTap: () {
-                            if (hasSubscription) {
-                              Navigator.pushNamed(context, '/service-request',
-                                  arguments: 'plumber');
-                            } else {
-                              debugPrint('Navigation: Home Screen -> Subscription Form');
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionFormScreen()));
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // ── Action Button ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: hasSubscription
-                      ? GradientButton(
-                          text: 'Call Service Now',
-                          icon: Icons.call_rounded,
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppConstants.successGreen,
-                              Color(0xFF00E676),
-                            ],
-                          ),
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/service-request');
-                          },
                         )
-                      : GradientButton(
-                          text: 'Buy Subscription',
-                          icon: Icons.star_rounded,
-                          gradient: AppConstants.accentGradient,
-                          onPressed: () {
-                            debugPrint('Navigation: Home Screen -> Subscription Form');
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const SubscriptionFormScreen()),
-                            );
-                          },
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'CLIMATE',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                            color: Color(0xE6FBF8F4),
+                            fontWeight: FontWeight.w300,
+                          ),
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Indoor comfort & air purification',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontSize: 10,
+                            color: const Color(0xFFA3A19E).withOpacity(0.4),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: GradientButton(
-                    text: 'Find Workers',
-                    icon: Icons.search_rounded,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1E88E5), Color(0xFF1565C0)],
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const WorkersScreen()),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // ── Quick Info Cards ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: const Text(
-                    'Why Choose Us',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppConstants.surfaceDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildInfoRow(
-                  Icons.verified_user_rounded,
-                  'Verified Technicians',
-                  'All our professionals are background-checked',
-                ),
-                _buildInfoRow(
-                  Icons.access_time_rounded,
-                  'Quick Response',
-                  'Average arrival time under 45 minutes',
-                ),
-                _buildInfoRow(
-                  Icons.support_agent_rounded,
-                  '24/7 Support',
-                  'Round-the-clock customer assistance',
-                ),
-                const SizedBox(height: 24),
-              ],
+                height: 128,
+              ),
             ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSmokedGlassCard({
+    required Widget child,
+    required double height,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
+          child: Container(
+            height: height,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0E0E12).withOpacity(0.4),
+              border: Border.all(color: Colors.white.withOpacity(0.05), width: 0.5),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: child,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+  Widget _buildResidenceFeed({Key? key}) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.03))),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  'Today at Home'.toUpperCase(),
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 10,
+                    letterSpacing: 4.0,
+                    color: const Color(0xFFA3A19E).withOpacity(0.3),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Text(
+                'LOG',
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 10,
+                  letterSpacing: 1.0,
+                  color: const Color(0xFFA3A19E).withOpacity(0.6),
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Row(
+        const SizedBox(height: 32),
+        Stack(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppConstants.primaryBlue.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
+            Positioned(
+              left: 21,
+              top: 8,
+              bottom: 8,
+              child: Container(
+                width: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(0.08),
+                      Colors.white.withOpacity(0.08),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
               ),
-              child: Icon(icon, color: AppConstants.primaryBlue, size: 22),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppConstants.surfaceDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppConstants.grey600,
-                    ),
-                  ),
-                ],
-              ),
+            Column(
+              children: [
+                _buildTimelineItem(
+                  isActive: true,
+                  title: 'Estate Cleaning',
+                  description: ' is currently in progress. 2 of 3 zones complete.',
+                  timeInfo: 'NOW • LEVEL 4 PENTHOUSE',
+                ),
+                const SizedBox(height: 48),
+                _buildTimelineItem(
+                  isActive: false,
+                  title: 'Pool Maintenance',
+                  description: ' scheduled for tomorrow.',
+                  timeInfo: 'TOMORROW • 10:00 AM',
+                ),
+                const SizedBox(height: 48),
+                _buildTimelineItem(
+                  isActive: false,
+                  title: 'HVAC Specialist',
+                  description: ' is en route to the estate.',
+                  timeInfo: 'ETA 12 MINS • SOUTH GATE',
+                ),
+              ],
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildTimelineItem({
+    required bool isActive,
+    required String title,
+    required String description,
+    required String timeInfo,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 44,
+          child: Center(
+            child: Container(
+              width: isActive ? 10 : 6,
+              height: isActive ? 10 : 6,
+              margin: EdgeInsets.only(top: isActive ? 6 : 8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isActive ? const Color(0xFFFBBC00) : const Color(0xFF0A0A0C),
+                border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.2)),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFFBBC00).withOpacity(0.4),
+                          blurRadius: 12,
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w300,
+                    color: isActive ? const Color(0xE6FBF8F4) : const Color(0xCCFBF8F4),
+                    height: 1.6,
+                    letterSpacing: 0.28,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: title,
+                      style: TextStyle(
+                        color: isActive ? const Color(0xFFFBBC00) : const Color(0xFFFBF8F4),
+                        fontWeight: isActive ? FontWeight.w400 : FontWeight.w300,
+                      ),
+                    ),
+                    TextSpan(text: description),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                timeInfo,
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 10,
+                  letterSpacing: 1.5,
+                  color: const Color(0xFFA3A19E).withOpacity(0.4),
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+        child: Container(
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A0A0E).withOpacity(0.85),
+            border: Border.all(color: Colors.white.withOpacity(0.03), width: 0.5),
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(
+                icon: Icons.home_filled,
+                label: 'HOME',
+                isActive: true,
+                onTap: _scrollToTop,
+              ),
+              _buildNavItem(
+                icon: Icons.grid_view_outlined,
+                label: 'SERVICES',
+                isActive: false,
+                onTap: () => Navigator.pushNamed(context, '/service-request'),
+              ),
+              _buildNavItem(
+                icon: Icons.auto_awesome_outlined,
+                label: 'CONCIERGE',
+                isActive: false,
+                onTap: () => _showModuleMessage(context, 'Concierge assistance is coming soon.'),
+              ),
+              _buildNavItem(
+                icon: Icons.history_edu_outlined,
+                label: 'ACTIVITY',
+                isActive: false,
+                onTap: _scrollToActivity,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 70,
+        height: 64,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? const Color(0xFFFBF8F4) : const Color(0xFFFBF8F4).withOpacity(0.3),
+              size: 22,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 8,
+                letterSpacing: 2.0,
+                color: isActive ? const Color(0xFFFBF8F4).withOpacity(0.9) : const Color(0xFFFBF8F4).withOpacity(0.4),
+                fontWeight: isActive ? FontWeight.w500 : FontWeight.w300,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(height: 4),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFFBBC00),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _scrollToActivity() {
+    final context = _activityKey.currentContext;
+    if (context == null) {
+      return;
+    }
+
+    Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      alignment: 0.12,
+    );
+  }
+
+  void _showModuleMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF15161A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 110),
       ),
     );
   }
