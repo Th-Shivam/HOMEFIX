@@ -10,9 +10,11 @@ import 'screens/onboarding_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/registration_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/services_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/service_request_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/edit_profile_screen.dart';
 import 'screens/pending_verification_screen.dart';
 
 /// Main app scaffold
@@ -48,9 +50,11 @@ class HomefixProApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegistrationScreen(),
           '/main': (context) => const MainScaffold(),
+          '/services': (context) => const ServicesScreen(),
           '/subscription': (context) => const SubscriptionScreen(),
           '/service-request': (context) => const ServiceRequestScreen(),
           '/profile': (context) => const ProfileScreen(),
+          '/edit-profile': (context) => const EditProfileScreen(),
           '/pending': (context) => const PendingVerificationScreen(),
         },
       ),
