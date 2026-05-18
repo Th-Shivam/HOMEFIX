@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>NIVASA - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;500&amp;family=Manrope:wght@300;400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "inverse-surface": "#ffe088",
+                "on-tertiary": "#402d00",
+                "on-secondary-container": "#b7b5b4",
+                "error": "#ffb4ab",
+                "on-primary-fixed-variant": "#474646",
+                "primary-container": "#121212",
+                "primary-fixed": "#e5e2e1",
+                "on-error-container": "#ffdad6",
+                "outline-variant": "#444748",
+                "inverse-primary": "#5f5e5e",
+                "on-error": "#690005",
+                "surface-container": "#281e00",
+                "on-tertiary-container": "#a07700",
+                "on-tertiary-fixed": "#261a00",
+                "on-secondary-fixed-variant": "#474746",
+                "on-primary": "#313030",
+                "tertiary-fixed": "#ffdfa0",
+                "surface": "#1a1200",
+                "surface-container-low": "#241a00",
+                "surface-bright": "#473700",
+                "secondary-container": "#474746",
+                "on-background": "#ffe088",
+                "on-primary-container": "#7e7d7d",
+                "background": "#1a1200",
+                "primary": "#c8c6c5",
+                "surface-tint": "#c8c6c5",
+                "surface-dim": "#1a1200",
+                "surface-container-lowest": "#140d00",
+                "secondary-fixed": "#e5e2e1",
+                "secondary": "#c8c6c5",
+                "surface-variant": "#423300",
+                "on-surface-variant": "#c4c7c7",
+                "surface-container-high": "#352800",
+                "on-secondary": "#313030",
+                "surface-container-highest": "#423300",
+                "tertiary-container": "#1a1100",
+                "on-secondary-fixed": "#1b1b1b",
+                "tertiary-fixed-dim": "#fbbc00",
+                "secondary-fixed-dim": "#c8c6c5",
+                "on-surface": "#ffe088",
+                "on-primary-fixed": "#1c1b1b",
+                "error-container": "#93000a",
+                "tertiary": "#fbbc00",
+                "outline": "#8e9192",
+                "on-tertiary-fixed-variant": "#5c4300",
+                "primary-fixed-dim": "#c8c6c5",
+                "inverse-on-surface": "#3c2f00"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "margin-edge": "64px",
+                "unit": "8px",
+                "gutter": "32px",
+                "container-max": "1440px",
+                "section-gap": "160px"
+        },
+        "fontFamily": {
+                "display-xl": [
+                        "Raleway"
+                ],
+                "body-md": [
+                        "Manrope"
+                ],
+                "headline-md": [
+                        "Raleway"
+                ],
+                "headline-lg": [
+                        "Raleway"
+                ],
+                "body-lg": [
+                        "Manrope"
+                ],
+                "label-sm": [
+                        "Manrope"
+                ]
+        },
+        "fontSize": {
+                "display-xl": [
+                        "80px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "0.15em",
+                                "fontWeight": "200"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.6",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "32px",
+                        {
+                                "lineHeight": "1.3",
+                                "letterSpacing": "0.08em",
+                                "fontWeight": "300"
+                        }
+                ],
+                "headline-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "300"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "300"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "1.0",
+                                "letterSpacing": "0.2em",
+                                "fontWeight": "500"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 20;
+            font-size: 18px;
+        }
+        .backdrop-blur-ultra {
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+        }
+        .text-shadow-elegant {
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+        }
+        .bg-noise {
+            background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBnuJvbBz6n3j-ALM0QnLTj-pSRu5j_oo9aav9ZpBTQxVpn752WaFp9WnGnXx5eDF_wC7YJYUImfSxY5eyFqpjJdj0FZ07W8HL7P7z3K311WPLkIoJ2EWjKRn-yRHTc4aQox2_4AhgdPC4Wf4FQkykmv7Jv_OtKuaLj3Ggx5Jwf5wy5l859dCLtR6xyVWjl9BjoWEIArMKmEN4sFG3vhc5NGdekWDvdnsdPG681mTbLtqtfJxkFMruNjvpTyVLRsFt9ZRF4XdxIF3u");
+            opacity: 0.02;
+        }
+        .metallic-edge {
+            box-shadow: 
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+                0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+        .ambient-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body class="bg-[#05070a] text-on-surface font-body-md overflow-hidden antialiased subpixel-antialiased" style="text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+<!-- Cinematic Architecture Background -->
+<div class="fixed inset-0 z-0">
+<img alt="Luxury penthouse interior at blue hour" class="w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN8IQMQ5vYKS81P7jHLgbd8YI9Gzq7UU33QZrBhESPo8MHIwQUx4KSaaTByBGtmr_6ufzvF_oK_BTOSpsyvjERBZoko0UNVrsJw3bJX5AT8BVul-ItoL7CcOLNDCPHTcmAvRhaswd0vkDSL-h0GNIxH5hdTjlA4nh8q6iSDZ4tAa1u6LmAnO_g6wRF9i7gkHK_vrLT0sJP_bgr-zvDX6a4nCs94LjWJF70-zi7cgZif8YjbgSoRFxUmJL-GwO2UVFPB4MlPi5BaU-D"/>
+<!-- Depth Falloff Gradients matching Onboarding -->
+<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.5)_100%)]"></div>
+<div class="absolute inset-0 bg-noise pointer-events-none"></div>
+</div>
+<!-- Top AppBar -->
+<nav class="relative z-50 w-full flex justify-between items-center px-8 pt-16 pb-6">
+<div class="font-display-xl tracking-[0.4em] text-white/90 uppercase font-light text-[11px]">NIVASA</div>
+<button class="font-label-sm text-[10px] uppercase text-white/40 hover:text-white transition-colors flex items-center gap-1.5 duration-500">
+            HELP
+            <span class="material-symbols-outlined !text-[16px]">help_outline</span>
+</button>
+</nav>
+<!-- Main Content -->
+<main class="relative z-10 flex flex-col items-center justify-center h-[calc(100vh-160px)] px-8">
+<div class="max-w-[340px] w-full space-y-12">
+<!-- Headline Group -->
+<div class="text-center space-y-4">
+<h1 class="font-display-xl text-white leading-[1.1] tracking-[-0.015em] font-extralight text-[34px] text-shadow-elegant">Welcome Back.</h1>
+<p class="font-body-md text-sm text-white/50 leading-relaxed font-light">Access your residence management experience.</p>
+</div>
+<!-- Login Form -->
+<form class="space-y-6" onsubmit="return false;">
+<div class="space-y-4">
+<!-- Email Field -->
+<div class="space-y-2">
+<label class="block font-label-sm text-[10px] text-white/40 ml-1 uppercase tracking-[0.1em]">RESIDENCE ID / EMAIL</label>
+<div class="ambient-card backdrop-blur-xl flex items-center rounded-2xl h-14 px-5 transition-all duration-700 focus-within:bg-white/[0.04] focus-within:border-white/10 group">
+<input class="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-white/20 font-body-md text-sm font-light" placeholder="name@domain.com" type="email"/>
+<span class="material-symbols-outlined text-white/30 group-focus-within:text-white/50 transition-colors">mail</span>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<label class="block font-label-sm text-[10px] text-white/40 ml-1 uppercase tracking-[0.1em]">SECURITY KEY</label>
+<div class="ambient-card backdrop-blur-xl flex items-center rounded-2xl h-14 px-5 transition-all duration-700 focus-within:bg-white/[0.04] focus-within:border-white/10 group">
+<input class="w-full bg-transparent border-none focus:ring-0 text-white placeholder:text-white/20 font-body-md text-sm font-light" placeholder="••••••••" type="password"/>
+<button class="text-white/30 hover:text-white/70 transition-colors" type="button">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Action Section -->
+<div class="pt-6 space-y-10">
+<button class="relative overflow-hidden bg-gradient-to-b from-[#2A2A2A] to-[#1A1A1A] w-full h-[52px] rounded-xl flex items-center justify-center gap-5 active:scale-[0.97] transition-all duration-300 metallic-edge group">
+<div class="absolute inset-0 bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="text-[11px] text-white/90 tracking-[0.35em] uppercase font-semibold">SIGN IN</span>
+</button>
+<div class="flex flex-col items-center gap-6">
+<button class="font-label-sm text-[10px] text-white/40 hover:text-white transition-colors tracking-[0.2em] uppercase font-medium" type="button">
+                            Forgot Password?
+                        </button>
+<div class="h-[1px] w-8 bg-white/10"></div>
+<div class="flex flex-col items-center gap-2">
+<span class="font-label-sm text-[9px] text-white/30 uppercase tracking-[0.15em] font-light">Don't have an account?</span>
+<button class="font-label-sm text-[10px] text-white/70 hover:text-white transition-colors tracking-[0.2em] uppercase font-medium border-b border-white/20 pb-0.5" type="button">
+                                Create Account
+                            </button>
+</div>
+</div>
+</div>
+</form>
+</div>
+</main>
+<!-- Minimal Footer -->
+<footer class="fixed bottom-8 w-full z-10 text-center">
+<p class="font-label-sm text-[9px] tracking-[0.4em] text-white/30 uppercase font-light">© NIVASA MMXXIV</p>
+</footer>
+<!-- Decorative Edge Accents -->
+<div class="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+</div>
+</body></html>

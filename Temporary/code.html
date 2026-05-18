@@ -1,0 +1,345 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>NIVASA - Residence Services</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#735c00",
+                        "on-secondary": "#2d3037",
+                        "surface-container-lowest": "#0c0e11",
+                        "secondary-fixed-dim": "#c4c6ce",
+                        "error-container": "#93000a",
+                        "primary": "#f2ca50",
+                        "surface-container-high": "#282a2d",
+                        "surface-bright": "#37393d",
+                        "on-tertiary-container": "#404551",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#171c26",
+                        "on-primary": "#3c2f00",
+                        "surface": "#111317",
+                        "on-secondary-fixed-variant": "#44474d",
+                        "on-secondary-container": "#b6b8c0",
+                        "on-surface-variant": "#d0c5af",
+                        "outline-variant": "#4d4635",
+                        "surface-container": "#1e2023",
+                        "primary-container": "#d4af37",
+                        "tertiary": "#cacedd",
+                        "outline": "#99907c",
+                        "secondary-container": "#464950",
+                        "tertiary-fixed": "#dee2f1",
+                        "primary-fixed-dim": "#e9c349",
+                        "on-primary-container": "#554300",
+                        "on-surface": "#e2e2e6",
+                        "tertiary-container": "#aeb3c1",
+                        "primary-fixed": "#ffe088",
+                        "surface-variant": "#333538",
+                        "on-error": "#690005",
+                        "on-primary-fixed": "#241a00",
+                        "on-tertiary-fixed-variant": "#424752",
+                        "surface-container-low": "#1a1c1f",
+                        "tertiary-fixed-dim": "#c2c6d4",
+                        "inverse-on-surface": "#2f3034",
+                        "secondary-fixed": "#e1e2ea",
+                        "on-primary-fixed-variant": "#574500",
+                        "surface-container-highest": "#333538",
+                        "on-error-container": "#ffdad6",
+                        "on-background": "#e2e2e6",
+                        "on-secondary-fixed": "#191c22",
+                        "secondary": "#c4c6ce",
+                        "surface-dim": "#111317",
+                        "surface-tint": "#e9c349",
+                        "on-tertiary": "#2b303b",
+                        "inverse-surface": "#e2e2e6",
+                        "background": "#111317"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "48px",
+                        "container-padding": "24px",
+                        "stack-lg": "32px",
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Manrope"],
+                        "headline-xl": ["Manrope"],
+                        "label-sm": ["Manrope"],
+                        "body-md": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "section-title": ["Manrope"],
+                        "headline-lg-mobile": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "300"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "200"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.2em", "fontWeight": "500"}],
+                        "body-md": ["15px", {"lineHeight": "22px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "300"}],
+                        "section-title": ["12px", {"lineHeight": "16px", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "300"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>body {
+            background-color: #0c0e11;
+            font-family: 'Manrope', sans-serif;
+            color: #e2e2e6;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(30, 32, 35, 0.4);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card:active {
+            transform: scale(0.98);
+            background: rgba(30, 32, 35, 0.5);
+        }
+        .premium-cta {
+            background: rgba(20, 20, 20, 0.3);
+            backdrop-filter: blur(40px);
+            border: 0.5px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 
+                inset 0 0 12px rgba(212, 175, 55, 0.05),
+                0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .premium-cta::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+            transition: 0.5s;
+        }
+        .premium-cta:active {
+            transform: scale(0.985);
+            box-shadow: 
+                inset 0 0 20px rgba(212, 175, 55, 0.15),
+                0 0 30px rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.8);
+        }
+        .premium-cta:active::before {
+            left: 100%;
+            transition: 0.8s;
+        }</style>
+<style>body {
+            background-color: #0c0e11;
+            font-family: 'Manrope', sans-serif;
+            color: #e2e2e6;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(30, 32, 35, 0.4);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card:active {
+            transform: scale(0.98);
+            background: rgba(30, 32, 35, 0.5);
+        }
+        .premium-cta {
+            background: rgba(20, 20, 20, 0.3);
+            backdrop-filter: blur(40px);
+            border: 0.5px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 
+                inset 0 0 12px rgba(212, 175, 55, 0.05),
+                0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .premium-cta::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+            transition: 0.5s;
+        }
+        .premium-cta:active {
+            transform: scale(0.985);
+            box-shadow: 
+                inset 0 0 20px rgba(212, 175, 55, 0.15),
+                0 0 30px rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.8);
+        }
+        .premium-cta:active::before {
+            left: 100%;
+            transition: 0.8s;
+        }</style><style>.uiverse-button {  display: flex;  align-items: center;  justify-content: center;  font-family: inherit;  cursor: pointer;  font-weight: 500;  font-size: 14px;  padding: 1.25rem;  color: #d4af37;  background: linear-gradient(to right, #0c0e11, #1a1c1f, #0c0e11);  border: 1px solid rgba(212, 175, 55, 0.3);  letter-spacing: 0.1em;  border-radius: 12px;  width: 100%;  transition: all 0.3s ease;  text-transform: uppercase;}.uiverse-button svg {  margin-right: 8px;  transform: rotate(30deg);  transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);}.uiverse-button span {  transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);}.uiverse-button:hover {  background: rgba(212, 175, 55, 0.1);  border-color: #d4af37;  box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);}.uiverse-button:hover svg {  transform: translateX(5px) rotate(90deg);}.uiverse-button:hover span {  transform: translateX(7px);}</style></head>
+<body class="min-h-screen relative overflow-x-hidden">
+<!-- Background Image Layer -->
+<div class="fixed inset-0 z-[-1]">
+<img alt="Ultra-luxury penthouse interior" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxpoxlx66Z1vAsIyKjhPGkW5uiE6gG8l0EiTZVSbbk9h3WW2jk51tL5g6Jnibr85lwMt4qtvpiubmZII-fWQ9I4d8mqXH93D7omaL80VyUfNPWv5l_KZmP5ZqmGsLKTJBba6ZD9u1vjNVUBLJoootdj6Yf3OvoCNkhbKAU74EcmAotDAM1a-My-L7phYsvte9PFzTbA3_wkrLTQRlMjhqVkxlDeljqwe-G777f_63aK8DaSN2R7O6-h0PEshAB5xpzNhbbD2FV9XE">
+<!-- Navy-Black Gradient Overlay -->
+<div class="absolute inset-0 bg-gradient-to-b from-[#0c0e11]/60 via-[#0c0e11]/80 to-[#0c0e11]"></div>
+</div>
+<!-- Top App Bar -->
+<header class="bg-transparent docked full-width top-0 z-50 flex justify-between items-center w-full px-6 py-4">
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile tracking-[0.2em] text-on-surface">NIVASA</h1>
+<div class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:opacity-80 transition-opacity backdrop-blur-md bg-white/5">
+<span class="material-symbols-outlined text-on-surface" data-icon="person">person</span>
+</div>
+</header>
+<main class="px-6 pb-32 pt-8 max-w-lg mx-auto">
+<!-- Section Header -->
+<div class="mb-10">
+<p class="text-label-sm font-label-sm uppercase tracking-widest text-primary mb-2">MANAGEMENT</p>
+<h2 class="text-headline-xl font-headline-xl text-on-surface">Residence Services</h2>
+</div>
+<!-- Services Bento Grid -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Maintenance - Featured Large -->
+<div class="col-span-2 glass-card rounded-[28px] p-6 flex flex-col justify-between h-48 cursor-pointer relative overflow-hidden group">
+<div class="flex justify-between items-start">
+<div class="w-12 h-12 rounded-2xl flex items-center justify-center border bg-white/5 border-white/10">
+<span class="material-symbols-outlined text-[28px] text-white" data-icon="build">build</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30 group-hover:text-primary transition-colors text-white" data-icon="arrow_forward_ios">arrow_forward_ios</span>
+</div>
+<div>
+<h3 class="text-body-lg font-headline-lg text-on-surface">Maintenance</h3>
+<p class="text-body-md text-on-surface-variant/70">Structural repairs or routine care</p>
+</div>
+</div>
+<!-- Security -->
+<div class="glass-card rounded-[28px] p-6 flex flex-col justify-between h-44 cursor-pointer group">
+<div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="shield">shield</span>
+</div>
+<div>
+<h3 class="text-body-md font-headline-lg text-on-surface">Security</h3>
+<p class="text-[12px] leading-tight text-on-surface-variant/60">Home protection &amp; surveillance</p>
+</div>
+</div>
+<!-- Concierge -->
+<div class="glass-card rounded-[28px] p-6 flex flex-col justify-between h-44 cursor-pointer group">
+<div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<h3 class="text-body-md font-headline-lg text-on-surface">Concierge</h3>
+<p class="text-[12px] leading-tight text-on-surface-variant/60">Lifestyle assistance &amp; bookings</p>
+</div>
+</div>
+<!-- Wellness -->
+<div class="glass-card rounded-[28px] p-6 flex flex-col justify-between h-44 cursor-pointer group">
+<div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="spa">spa</span>
+</div>
+<div>
+<h3 class="text-body-md font-headline-lg text-on-surface">Wellness</h3>
+<p class="text-[12px] leading-tight text-on-surface-variant/60">Spa bookings &amp; private chefs</p>
+</div>
+</div>
+<!-- Climate -->
+<div class="glass-card rounded-[28px] p-6 flex flex-col justify-between h-44 cursor-pointer group">
+<div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors" data-icon="thermostat">thermostat</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center justify-between">
+<h3 class="text-body-md font-headline-lg text-on-surface">Climate</h3>
+<span class="text-primary text-[12px] font-semibold">72°F</span>
+</div>
+<p class="text-[12px] leading-tight text-on-surface-variant/60">Indoor comfort control</p>
+</div>
+</div>
+<!-- Housekeeping -->
+<div class="col-span-2 glass-card rounded-[28px] p-6 flex items-center gap-6 cursor-pointer group">
+<div class="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center flex-shrink-0 border border-white/5">
+<span class="material-symbols-outlined text-[32px] text-on-surface-variant group-hover:text-primary transition-colors" data-icon="cleaning_services">cleaning_services</span>
+</div>
+<div class="flex-grow">
+<h3 class="text-body-lg font-headline-lg text-on-surface">Housekeeping</h3>
+<p class="text-body-md text-on-surface-variant/70">Deep cleaning &amp; laundry services</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<!-- Premium CTA Button -->
+<div class="mt-8">
+<button class="uiverse-button">  <svg height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">    <path d="M0 0h24v24H0z" fill="none"></path>    <path d="M5 13c0-5.088 2.903-9.436 7-11.182C16.097 3.564 19 7.912 19 13c0 .823-.076 1.626-.22 2.403l1.94 1.832a.5.5 0 0 1 .095.603l-2.495 4.575a.5.5 0 0 1-.793.114l-2.234-2.234a1 1 0 0 0-.707-.293H9.414a1 1 0 0 0-.707.293l-2.234 2.234a.5.5 0 0 1-.793-.114l-2.495-4.575a.5.5 0 0 1 .095-.603l1.94-1.832C5.077 14.626 5 13.823 5 13zm1.476 6.696l.817-.817A3 3 0 0 1 9.414 18h5.172a3 3 0 0 1 2.121.879l.817.817.982-1.8-1.1-1.04a2 2 0 0 1-.593-1.82c.124-.664.187-1.345.187-2.036 0-3.87-1.995-7.3-5-8.96C8.995 5.7 7 9.13 7 13c0 .691.063 1.372.187 2.037a2 2 0 0 1-.593 1.82l-1.1 1.039.982 1.8zM12 13a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="currentColor"></path>  </svg>  <span class="">RAISE A SERVICE REQUEST</span></button>
+</div>
+<!-- Recent Activity Mini Section -->
+<div class="mt-12">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-label-sm font-label-sm uppercase tracking-widest text-on-surface-variant/60">UPCOMING</h3>
+<span class="text-[11px] text-primary uppercase font-bold tracking-widest cursor-pointer hover:opacity-70 transition-opacity">VIEW ALL</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 py-2">
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(242,202,80,0.5)]"></div>
+<div>
+<p class="text-body-md text-on-surface">Garden Landscaping</p>
+<p class="text-label-sm text-on-surface-variant/50">TOMORROW • 08:00 AM</p>
+</div>
+</div>
+<div class="flex items-center gap-4 py-2">
+<div class="w-2 h-2 rounded-full bg-on-surface-variant/20"></div>
+<div>
+<p class="text-body-md text-on-surface">Window Cleaning</p>
+<p class="text-label-sm text-on-surface-variant/50">FRIDAY • 10:00 AM</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pt-4 pb-8 bg-[#0c0e11]/30 backdrop-blur-2xl border-t border-white/5 rounded-t-[32px]">
+<div class="flex flex-col items-center justify-center text-on-surface-variant/50 hover:text-on-surface transition-colors cursor-pointer">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-label-sm font-label-sm uppercase tracking-widest mt-1">HOME</span>
+</div>
+<!-- Active: SERVICES -->
+<div class="flex flex-col items-center justify-center text-primary relative after:content-[''] after:absolute after:-bottom-2 after:w-1 after:h-1 after:bg-primary after:rounded-full scale-110 transition-transform duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="grid_view" style="font-variation-settings: &quot;FILL&quot; 1;">grid_view</span>
+<span class="text-label-sm font-label-sm uppercase tracking-widest mt-1">SERVICES</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/50 hover:text-on-surface transition-colors cursor-pointer">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-label-sm font-label-sm uppercase tracking-widest mt-1">CONCIERGE</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant/50 hover:text-on-surface transition-colors cursor-pointer">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="text-label-sm font-label-sm uppercase tracking-widest mt-1">ACTIVITY</span>
+</div>
+</nav>
+
+
+
+
+
+
+</body></html>
