@@ -1,11 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/subscription_provider.dart';
-import '../widgets/gradient_button.dart';
 
-/// Profile screen showing user info, subscription status, and logout
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -18,264 +16,362 @@ class ProfileScreen extends StatelessWidget {
     final hasSubscription = subProvider.hasActiveSubscription;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFF8FAFF), Color(0xFFEEF2FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      backgroundColor: const Color(0xFF0A0A0C),
+      body: Stack(
+        children: [
+          // Cinematic Background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/nivasa-homescreen.png',
+              fit: BoxFit.cover,
+              color: const Color(0xFF0A0A0C).withOpacity(0.5),
+              colorBlendMode: BlendMode.srcOver,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                const SizedBox(height: 24),
-
-                // ── Profile Header ──
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    gradient: AppConstants.primaryGradient,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppConstants.primaryBlue.withAlpha(50),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Avatar
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withAlpha(80),
-                            width: 3,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        user.name,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withAlpha(200),
-                        ),
-                      ),
-                      if (user.phone.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          user.phone,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withAlpha(200),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+          // Vignette
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.0,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0A0A0C).withOpacity(0.8),
+                  ],
                 ),
-                const SizedBox(height: 24),
-
-                // ── Subscription Card ──
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(10),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+              ),
+            ),
+          ),
+          // Vertical Gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF0A0A0C),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0xFF0A0A0C),
+                  ],
+                  stops: [0.0, 0.2, 0.8, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Main Content
+          Positioned.fill(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(top: 80, bottom: 120, left: 24, right: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Row(
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: hasSubscription
-                                  ? AppConstants.successGreen.withAlpha(20)
-                                  : AppConstants.grey100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              hasSubscription
-                                  ? Icons.verified_rounded
-                                  : Icons.card_membership_rounded,
-                              color: hasSubscription
-                                  ? AppConstants.successGreen
-                                  : AppConstants.grey600,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Subscription',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppConstants.surfaceDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  subscription.planName,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: hasSubscription
-                                        ? AppConstants.successGreen
-                                        : AppConstants.grey600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                          Icon(Icons.arrow_back_ios, color: const Color(0xFFA3A19E).withOpacity(0.5), size: 12),
+                          const SizedBox(width: 8),
+                          Text(
+                            'BACK',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 9,
+                              letterSpacing: 3.6,
+                              color: const Color(0xFFA3A19E).withOpacity(0.5),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                      if (hasSubscription) ...[
-                        const SizedBox(height: 16),
-                        const Divider(height: 1),
-                        const SizedBox(height: 16),
-                        _buildDetailRow('Plan', subscription.planName),
-                        const SizedBox(height: 10),
-                        _buildDetailRow(
-                          'Expires',
-                          subscription.formattedExpiry,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildDetailRow(
-                          'Days Remaining',
-                          '${subscription.daysRemaining} days',
-                        ),
-                        const SizedBox(height: 10),
-                        _buildDetailRow(
-                          'Status',
-                          subscription.description,
-                        ),
-                      ],
-                      if (!hasSubscription) ...[
-                        const SizedBox(height: 16),
-                        GradientButton(
-                          text: 'Get a Subscription',
-                          icon: Icons.star_rounded,
-                          gradient: AppConstants.accentGradient,
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/subscription');
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Menu Items ──
-                _buildMenuItem(
-                  context,
-                  icon: Icons.history_rounded,
-                  title: 'Service History',
-                  subtitle: 'View past service requests',
-                  onTap: () {},
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.payment_rounded,
-                  title: 'Payment Methods',
-                  subtitle: 'Manage your payment options',
-                  onTap: () {},
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Manage notification preferences',
-                  onTap: () {},
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.help_outline_rounded,
-                  title: 'Help & Support',
-                  subtitle: 'Get help or contact us',
-                  onTap: () {},
-                ),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.info_outline_rounded,
-                  title: 'About HomeFix Pro',
-                  subtitle: 'Version 1.0.0',
-                  onTap: () {},
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Logout Button ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: GradientButton(
-                    text: 'Logout',
-                    icon: Icons.logout_rounded,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE53935), Color(0xFFEF5350)],
                     ),
-                    onPressed: () async {
-                      await authProvider.logout();
-                      if (context.mounted) {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/login',
-                          (route) => false,
-                        );
-                      }
-                    },
-                  ),
+                    const SizedBox(height: 32),
+                    
+                    // Profile Header
+                    _buildGlassContainer(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
+                              border: Border.all(color: Colors.white.withOpacity(0.1)),
+                            ),
+                            child: Center(
+                              child: Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  fontFamily: 'Raleway',
+                                  fontSize: 24,
+                                  color: Color(0xFFFBF8F4),
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user.name,
+                                  style: const TextStyle(
+                                    fontFamily: 'Raleway',
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w300,
+                                    color: Color(0xFFFBF8F4),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  user.email,
+                                  style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontSize: 12,
+                                    color: const Color(0xFFA3A19E).withOpacity(0.7),
+                                  ),
+                                ),
+                                if (user.phone.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    user.phone,
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 12,
+                                      color: const Color(0xFFA3A19E).withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          // Edit Button
+                          GestureDetector(
+                            onTap: () => Navigator.pushNamed(context, '/edit-profile'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                              ),
+                              child: const Text(
+                                'EDIT',
+                                style: TextStyle(
+                                  fontFamily: 'Manrope',
+                                  fontSize: 10,
+                                  letterSpacing: 1.0,
+                                  color: Color(0xFFFBF8F4),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Subscription Card
+                    _buildGlassContainer(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                hasSubscription ? Icons.verified_outlined : Icons.card_membership_outlined,
+                                color: hasSubscription ? const Color(0xFFFBBC00) : Colors.white.withOpacity(0.4),
+                                size: 24,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'SUBSCRIPTION',
+                                      style: TextStyle(
+                                        fontFamily: 'Manrope',
+                                        fontSize: 12,
+                                        letterSpacing: 1.2,
+                                        color: Color(0xE6FBF8F4),
+                                        fontWeight: FontWeight.w300,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subscription.planName,
+                                      style: TextStyle(
+                                        fontFamily: 'Manrope',
+                                        fontSize: 10,
+                                        color: hasSubscription ? const Color(0xFFFBBC00).withOpacity(0.8) : const Color(0xFFA3A19E).withOpacity(0.4),
+                                        fontWeight: FontWeight.w300,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (hasSubscription) ...[
+                            const SizedBox(height: 20),
+                            Container(height: 1, color: Colors.white.withOpacity(0.05)),
+                            const SizedBox(height: 20),
+                            _buildDetailRow('Plan', subscription.planName),
+                            const SizedBox(height: 12),
+                            _buildDetailRow('Expires', subscription.formattedExpiry),
+                            const SizedBox(height: 12),
+                            _buildDetailRow('Days Remaining', '${subscription.daysRemaining} days'),
+                            const SizedBox(height: 12),
+                            _buildDetailRow('Status', subscription.description),
+                          ],
+                          if (!hasSubscription) ...[
+                            const SizedBox(height: 24),
+                            GestureDetector(
+                              onTap: () => Navigator.pushNamed(context, '/subscription'),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFBBC00).withOpacity(0.3)),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'GET A SUBSCRIPTION',
+                                    style: TextStyle(
+                                      fontFamily: 'Manrope',
+                                      fontSize: 11,
+                                      letterSpacing: 2.0,
+                                      color: Color(0xFFFBBC00),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Menu Items
+                    _buildGlassContainer(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.history_outlined,
+                            title: 'Service History',
+                            subtitle: 'View past service requests',
+                            onTap: () {},
+                          ),
+                          Container(height: 1, color: Colors.white.withOpacity(0.05)),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.payment_outlined,
+                            title: 'Payment Methods',
+                            subtitle: 'Manage your payment options',
+                            onTap: () {},
+                          ),
+                          Container(height: 1, color: Colors.white.withOpacity(0.05)),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.notifications_outlined,
+                            title: 'Notifications',
+                            subtitle: 'Manage notification preferences',
+                            onTap: () {},
+                          ),
+                          Container(height: 1, color: Colors.white.withOpacity(0.05)),
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.help_outline,
+                            title: 'Help & Support',
+                            subtitle: 'Get help or contact us',
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Logout Button
+                    GestureDetector(
+                      onTap: () async {
+                        await authProvider.logout();
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE53935).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE53935).withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.logout_rounded, color: const Color(0xFFE53935).withOpacity(0.8), size: 18),
+                            const SizedBox(width: 12),
+                            Text(
+                              'LOGOUT',
+                              style: TextStyle(
+                                fontFamily: 'Manrope',
+                                fontSize: 11,
+                                letterSpacing: 2.0,
+                                color: const Color(0xFFE53935).withOpacity(0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
           ),
+          // Top Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildHeader(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassContainer({required Widget child, EdgeInsetsGeometry? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
+        child: Container(
+          width: double.infinity,
+          padding: padding ?? const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E0E12).withOpacity(0.4),
+            border: Border.all(color: Colors.white.withOpacity(0.05), width: 0.5),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: child,
         ),
       ),
     );
@@ -287,17 +383,20 @@ class ProfileScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppConstants.grey600,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 12,
+            color: const Color(0xFFA3A19E).withOpacity(0.6),
+            fontWeight: FontWeight.w300,
           ),
         ),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.surfaceDark,
+            fontFamily: 'Manrope',
+            fontSize: 12,
+            color: Color(0xE6FBF8F4),
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -311,61 +410,101 @@ class ProfileScreen extends StatelessWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppConstants.primaryBlue.withAlpha(15),
-                    borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white.withOpacity(0.4), size: 22),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 14,
+                      color: Color(0xE6FBF8F4),
+                      fontWeight: FontWeight.w300,
+                    ),
                   ),
-                  child:
-                      Icon(icon, color: AppConstants.primaryBlue, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppConstants.surfaceDark,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppConstants.grey600,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 10,
+                      color: const Color(0xFFA3A19E).withOpacity(0.4),
+                      fontWeight: FontWeight.w300,
+                    ),
                   ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16,
-                  color: AppConstants.grey300,
-                ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.white.withOpacity(0.1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.only(top: 40, left: 32, right: 32),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF0A0A0C).withOpacity(0.8),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'NIVASA',
+            style: TextStyle(
+              fontFamily: 'Raleway',
+              fontSize: 16,
+              letterSpacing: 6.4,
+              color: Color(0xFFFBF8F4),
+              fontWeight: FontWeight.w300,
+              shadows: [
+                Shadow(color: Color(0x1AFBF8F4), blurRadius: 15),
               ],
             ),
           ),
-        ),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.person_outline,
+                  color: const Color(0xFFFBF8F4).withOpacity(0.4),
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
