@@ -665,7 +665,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.grid_view_outlined,
                 label: 'SERVICES',
                 isActive: false,
-                onTap: () => Navigator.pushNamed(context, '/service-request'),
+                onTap: () => Navigator.pushNamed(context, '/services'),
               ),
               _buildNavItem(
                 icon: Icons.auto_awesome_outlined,
