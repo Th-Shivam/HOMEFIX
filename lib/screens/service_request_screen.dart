@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../core/constants.dart';
 import '../models/service_request_model.dart';
 import '../providers/service_provider.dart';
+import '../services/ticket_workflow_service.dart';
 import '../widgets/gradient_button.dart';
 
-/// Service request screen with animated progress and technician-on-the-way UI
+/// AI-powered service request ticket screen
 class ServiceRequestScreen extends StatefulWidget {
   const ServiceRequestScreen({super.key});
 
@@ -17,39 +19,24 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
+  final TextEditingController _issueImageController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Pulse animation for the progress indicator
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+    _pulseAnimation = Tween<double>(begin: 0.88, end: 1.08).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
-    // Slide-in animation
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
-    _slideController.forward();
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
-    _slideController.dispose();
+    _issueImageController.dispose();
     super.dispose();
   }
 
@@ -82,332 +69,428 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
             end: Alignment.bottomCenter,
           ),
         ),
-        child: currentRequest == null || currentRequest.status == ServiceStatus.idle
+        child: currentRequest == null
             ? _buildServiceSelection(serviceProvider, routeArg)
-            : _buildServiceProgress(serviceProvider, currentRequest),
+            : _buildTicketProgress(serviceProvider, currentRequest),
       ),
     );
   }
 
-  /// Initial screen — choose which service to call
   Widget _buildServiceSelection(ServiceProvider provider, String? preselected) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // Header
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppConstants.primaryBlue.withAlpha(20),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.support_agent_rounded,
-                size: 52,
-                color: AppConstants.primaryBlue,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Need a Professional?',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppConstants.surfaceDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Select a service and we\'ll send a technician right away',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppConstants.grey600,
-              ),
-            ),
-            const SizedBox(height: 40),
-
-            // Call Electrician button
-            _buildServiceButton(
-              icon: Icons.electrical_services_rounded,
-              title: 'Call Electrician',
-              subtitle: 'Wiring, switches, appliance repair',
-              color: const Color(0xFFFF6D00),
-              isPreselected: preselected == 'electrician',
-              onTap: () => provider.requestService(ServiceType.electrician),
-            ),
-            const SizedBox(height: 16),
-
-            // Call Plumber button
-            _buildServiceButton(
-              icon: Icons.plumbing_rounded,
-              title: 'Call Plumber',
-              subtitle: 'Pipes, faucets, drainage & leaks',
-              color: AppConstants.primaryBlue,
-              isPreselected: preselected == 'plumber',
-              onTap: () => provider.requestService(ServiceType.plumber),
-            ),
-            const SizedBox(height: 32),
-
-            // Info
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppConstants.accentGold.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppConstants.accentGold.withAlpha(60)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: AppConstants.accentOrange, size: 22),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Our technicians typically arrive within 30-45 minutes',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppConstants.grey800,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+    final inputDecoration = InputDecoration(
+      hintText: 'Optional issue image URL/path',
+      filled: true,
+      fillColor: Colors.white,
+      prefixIcon: const Icon(Icons.image_outlined),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
       ),
     );
-  }
-
-  /// Service-in-progress UI with animation
-  Widget _buildServiceProgress(
-      ServiceProvider provider, ServiceRequestModel request) {
-    final isOnTheWay = request.status == ServiceStatus.technicianOnWay;
-    final isInProgress = request.status == ServiceStatus.inProgress ||
-        request.status == ServiceStatus.requested;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          const SizedBox(height: 40),
-
-          // Animated icon
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pulseAnimation.value,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: isOnTheWay
-                        ? AppConstants.successGreen.withAlpha(25)
-                        : AppConstants.primaryBlue.withAlpha(25),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isOnTheWay
-                                ? AppConstants.successGreen
-                                : AppConstants.primaryBlue)
-                            .withAlpha(30),
-                        blurRadius: 30,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    isOnTheWay
-                        ? Icons.directions_walk_rounded
-                        : Icons.search_rounded,
-                    size: 56,
-                    color: isOnTheWay
-                        ? AppConstants.successGreen
-                        : AppConstants.primaryBlue,
-                  ),
-                ),
-              );
-            },
+          const SizedBox(height: 12),
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: AppConstants.primaryBlue.withAlpha(20),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.smart_toy_outlined,
+              size: 44,
+              color: AppConstants.primaryBlue,
+            ),
           ),
-          const SizedBox(height: 32),
-
-          // Status text
-          Text(
-            request.statusText,
-            style: const TextStyle(
-              fontSize: 22,
+          const SizedBox(height: 20),
+          const Text(
+            'Raise AI-Powered Ticket',
+            style: TextStyle(
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppConstants.surfaceDark,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Service: ${request.serviceName}',
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppConstants.grey600,
-              fontWeight: FontWeight.w500,
+          const SizedBox(height: 8),
+          const Text(
+            'Upload an issue image (optional) to trigger AI analysis and smarter prioritization.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppConstants.grey600),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _issueImageController,
+            decoration: inputDecoration,
+          ),
+          const SizedBox(height: 20),
+          _buildServiceButton(
+            icon: Icons.electrical_services_rounded,
+            title: 'Call Electrician',
+            subtitle: 'Wiring, switches, appliance repair',
+            color: const Color(0xFFFF6D00),
+            isPreselected: preselected == 'electrician',
+            onTap: () => provider.requestService(
+              ServiceType.electrician,
+              issueImageReference: _issueImageController.text.trim(),
             ),
           ),
-          const SizedBox(height: 32),
-
-          // Progress stages
-          _buildProgressStage(
-            'Service Requested',
-            true,
-            Icons.check_circle_rounded,
-          ),
-          _buildProgressConnector(true),
-          _buildProgressStage(
-            'Finding Technician',
-            !isInProgress || isOnTheWay,
-            isInProgress && !isOnTheWay
-                ? Icons.hourglass_top_rounded
-                : Icons.check_circle_rounded,
-          ),
-          _buildProgressConnector(!isInProgress || isOnTheWay),
-          _buildProgressStage(
-            'Technician On The Way',
-            isOnTheWay,
-            isOnTheWay
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
-          ),
-
-          // Technician info card
-          if (isOnTheWay && request.technicianName != null) ...[
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(12),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      gradient: AppConstants.primaryGradient,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        request.technicianName![0],
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          request.technicianName!,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: AppConstants.surfaceDark,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.star_rounded,
-                                color: AppConstants.accentGold, size: 18),
-                            const SizedBox(width: 4),
-                            Text(
-                              '4.8 • ${request.serviceName}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppConstants.grey600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppConstants.successGreen.withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.call_rounded,
-                      color: AppConstants.successGreen,
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 16),
+          _buildServiceButton(
+            icon: Icons.plumbing_rounded,
+            title: 'Call Plumber',
+            subtitle: 'Pipes, faucets, drainage & leaks',
+            color: AppConstants.primaryBlue,
+            isPreselected: preselected == 'plumber',
+            onTap: () => provider.requestService(
+              ServiceType.plumber,
+              issueImageReference: _issueImageController.text.trim(),
             ),
-            const SizedBox(height: 24),
-            // ETA
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppConstants.successGreen.withAlpha(18),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: AppConstants.successGreen.withAlpha(50)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.access_time_rounded,
-                      color: AppConstants.successGreen, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Estimated arrival: 30-45 minutes',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppConstants.successGreen,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          if (provider.isLoading) ...[
+            const SizedBox(height: 18),
+            const CircularProgressIndicator(),
+          ],
+          if (provider.lastError != null) ...[
+            const SizedBox(height: 18),
+            Text(
+              provider.lastError!,
+              style: const TextStyle(color: Colors.redAccent),
             ),
           ],
-          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
 
-          // Done / Back button
-          if (isOnTheWay)
-            GradientButton(
-              text: 'Back to Home',
-              icon: Icons.home_rounded,
-              onPressed: () {
-                provider.resetRequest();
-                Navigator.pop(context);
-              },
+  Widget _buildTicketProgress(ServiceProvider provider, ServiceRequestModel ticket) {
+    final trackerStatuses = _buildTrackerStatuses(ticket);
+    final currentIndex = trackerStatuses.indexOf(ticket.status);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (_, __) => Transform.scale(
+              scale: _pulseAnimation.value,
+              child: Center(
+                child: Container(
+                  width: 92,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    color: AppConstants.primaryBlue.withAlpha(24),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.confirmation_number_rounded,
+                    color: AppConstants.primaryBlue,
+                    size: 46,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              ticket.statusText,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppConstants.surfaceDark,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              '${ticket.serviceName} ticket • ${ticket.status.wireValue}',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppConstants.grey600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          _buildAiAnalysisCard(ticket),
+          const SizedBox(height: 16),
+          _buildTimelineCard(ticket),
+          const SizedBox(height: 16),
+          _buildProgressTracker(trackerStatuses, currentIndex),
+          const SizedBox(height: 18),
+          _buildActions(provider, ticket),
+          const SizedBox(height: 24),
+          if (provider.isLoading) const Center(child: CircularProgressIndicator()),
+          if (provider.lastError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                provider.lastError!,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
             ),
         ],
       ),
     );
+  }
+
+  Widget _buildAiAnalysisCard(ServiceRequestModel ticket) {
+    if (ticket.aiSummary == null) {
+      return _buildCard(
+        child: const Text(
+          'No AI insights yet. Add an issue image during ticket creation to run AI analysis.',
+          style: TextStyle(color: AppConstants.grey600),
+        ),
+      );
+    }
+
+    final severity = ticket.severityLevel;
+    final urgency = ticket.urgencyScore ?? 0;
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: AppConstants.primaryBlue),
+              SizedBox(width: 8),
+              Text(
+                'AI Analysis',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppConstants.surfaceDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _badge('Urgency: $urgency', _urgencyColor(urgency)),
+              if (severity != null) _badge('Severity: ${severity.label}', _severityColor(severity)),
+              if (ticket.aiConfidence != null)
+                _badge('Confidence: ${(ticket.aiConfidence! * 100).toStringAsFixed(0)}%', AppConstants.primaryBlue),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (ticket.suggestedIssueCategory != null)
+            Text(
+              'Suggested category: ${ticket.suggestedIssueCategory}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          const SizedBox(height: 6),
+          Text(ticket.aiSummary!, style: const TextStyle(color: AppConstants.grey800)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineCard(ServiceRequestModel ticket) {
+    final entries = ticket.statusTimestamps.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ticket Timeline',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppConstants.surfaceDark,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppConstants.successGreen,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      entry.key.label,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Text(
+                    _formatDate(entry.value),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.grey600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressTracker(List<TicketStatus> statuses, int currentIndex) {
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Lifecycle Tracker',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppConstants.surfaceDark,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 86,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: statuses.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, index) {
+                final status = statuses[index];
+                final isDone = index <= currentIndex;
+                return Container(
+                  width: 150,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDone ? AppConstants.successGreen.withAlpha(16) : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDone ? AppConstants.successGreen : AppConstants.grey300,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        color: isDone ? AppConstants.successGreen : AppConstants.grey600,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        status.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActions(ServiceProvider provider, ServiceRequestModel ticket) {
+    switch (ticket.status) {
+      case TicketStatus.onTheWay:
+        return GradientButton(
+          text: 'Start Work',
+          icon: Icons.play_arrow_rounded,
+          onPressed: () => provider.updateStatus(
+            TicketStatus.inProgress,
+            role: TicketActorRole.technician,
+          ),
+        );
+      case TicketStatus.inProgress:
+        return Column(
+          children: [
+            GradientButton(
+              text: 'Waiting For Parts',
+              icon: Icons.build_circle_outlined,
+              onPressed: () => provider.updateStatus(
+                TicketStatus.waitingForParts,
+                role: TicketActorRole.technician,
+              ),
+            ),
+            const SizedBox(height: 10),
+            GradientButton(
+              text: 'Complete Work',
+              icon: Icons.task_alt_rounded,
+              onPressed: provider.completeAndRequestVerification,
+            ),
+          ],
+        );
+      case TicketStatus.waitingForParts:
+        return GradientButton(
+          text: 'Resume Work',
+          icon: Icons.refresh_rounded,
+          onPressed: () => provider.updateStatus(
+            TicketStatus.inProgress,
+            role: TicketActorRole.technician,
+          ),
+        );
+      case TicketStatus.customerVerification:
+        return Column(
+          children: [
+            GradientButton(
+              text: 'Close Ticket',
+              icon: Icons.verified_rounded,
+              onPressed: () => provider.updateStatus(
+                TicketStatus.closed,
+                role: TicketActorRole.customer,
+              ),
+            ),
+            const SizedBox(height: 10),
+            GradientButton(
+              text: 'Reopen Ticket',
+              icon: Icons.replay_rounded,
+              onPressed: () => provider.updateStatus(
+                TicketStatus.reopened,
+                role: TicketActorRole.customer,
+              ),
+            ),
+          ],
+        );
+      case TicketStatus.reopened:
+        return GradientButton(
+          text: 'Reassign Technician',
+          icon: Icons.assignment_turned_in_rounded,
+          onPressed: () => provider.updateStatus(
+            TicketStatus.assigned,
+            role: TicketActorRole.reviewer,
+          ),
+        );
+      case TicketStatus.closed:
+        return GradientButton(
+          text: 'Back to Home',
+          icon: Icons.home_rounded,
+          onPressed: () {
+            provider.resetRequest();
+            Navigator.pop(context);
+          },
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildServiceButton({
@@ -431,9 +514,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: isPreselected
-                  ? color.withAlpha(30)
-                  : Colors.black.withAlpha(8),
+              color: isPreselected ? color.withAlpha(30) : Colors.black.withAlpha(8),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -485,50 +566,104 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
     );
   }
 
-  Widget _buildProgressStage(String label, bool isComplete, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 28,
-            color: isComplete
-                ? AppConstants.successGreen
-                : AppConstants.grey300,
-          ),
-          const SizedBox(width: 14),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: isComplete ? FontWeight.w600 : FontWeight.w400,
-              color: isComplete
-                  ? AppConstants.surfaceDark
-                  : AppConstants.grey600,
-            ),
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _badge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12),
       ),
     );
   }
 
-  Widget _buildProgressConnector(bool isActive) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 45),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          width: 3,
-          height: 28,
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppConstants.successGreen
-                : AppConstants.grey300,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
+  List<TicketStatus> _buildTrackerStatuses(ServiceRequestModel ticket) {
+    final stages = <TicketStatus>[
+      TicketStatus.requestRaised,
+      TicketStatus.aiAnalysis,
+      TicketStatus.pendingReview,
+      TicketStatus.assigned,
+      TicketStatus.accepted,
+      TicketStatus.onTheWay,
+      TicketStatus.inProgress,
+      TicketStatus.completed,
+      TicketStatus.customerVerification,
+      TicketStatus.closed,
+    ];
+
+    // Optional states are shown only if they happened (or are current) while
+    // preserving the fixed baseline lifecycle ordering above.
+    if (ticket.statusTimestamps.containsKey(TicketStatus.waitingForParts) ||
+        ticket.status == TicketStatus.waitingForParts) {
+      final completedIndex = stages.indexOf(TicketStatus.completed);
+      if (completedIndex != -1) {
+        stages.insert(completedIndex, TicketStatus.waitingForParts);
+      }
+    }
+    if (ticket.statusTimestamps.containsKey(TicketStatus.reopened) ||
+        ticket.status == TicketStatus.reopened) {
+      final assignedIndex = stages.indexOf(TicketStatus.assigned);
+      if (assignedIndex != -1 && !stages.contains(TicketStatus.reopened)) {
+        stages.insert(assignedIndex, TicketStatus.reopened);
+      }
+    }
+    return stages;
+  }
+
+  Color _urgencyColor(int urgency) {
+    if (urgency > TicketWorkflowService.criticalUrgencyMinScore) {
+      return Colors.red.shade700;
+    }
+    if (urgency > TicketWorkflowService.highUrgencyMinScore) {
+      return Colors.deepOrange;
+    }
+    if (urgency > TicketWorkflowService.mediumUrgencyMinScore) {
+      return Colors.amber.shade700;
+    }
+    return AppConstants.successGreen;
+  }
+
+  Color _severityColor(SeverityLevel level) {
+    switch (level) {
+      case SeverityLevel.low:
+        return AppConstants.successGreen;
+      case SeverityLevel.medium:
+        return Colors.amber.shade700;
+      case SeverityLevel.high:
+        return Colors.deepOrange;
+      case SeverityLevel.critical:
+        return Colors.red.shade700;
+    }
+  }
+
+  String _formatDate(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$day/$month $hour:$minute';
   }
 }

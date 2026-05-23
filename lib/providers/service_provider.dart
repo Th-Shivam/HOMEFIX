@@ -1,57 +1,115 @@
 import 'package:flutter/material.dart';
+
 import '../models/service_request_model.dart';
-import '../services/mock_api_service.dart';
+import '../services/ticket_workflow_service.dart';
 
 /// Manages service request state for HomeFix Pro
 class ServiceProvider extends ChangeNotifier {
+  ServiceProvider({TicketWorkflowService? workflowService})
+      : _workflowService = workflowService ?? TicketWorkflowService();
+
+  final TicketWorkflowService _workflowService;
+
   ServiceRequestModel? _currentRequest;
   bool _isLoading = false;
+  String? _lastError;
 
   ServiceRequestModel? get currentRequest => _currentRequest;
   bool get isLoading => _isLoading;
+  String? get lastError => _lastError;
+
   bool get hasActiveRequest =>
-      _currentRequest != null &&
-      _currentRequest!.status != ServiceStatus.idle &&
-      _currentRequest!.status != ServiceStatus.completed;
+      _currentRequest != null && _currentRequest!.status != TicketStatus.closed;
 
-  /// Request a service (mock) — transitions through stages
-  Future<void> requestService(ServiceType type) async {
+  Future<void> requestService(
+    ServiceType type, {
+    String? issueImageReference,
+  }) async {
     _isLoading = true;
-    _currentRequest = ServiceRequestModel(
-      serviceType: type,
-      status: ServiceStatus.requested,
-      requestTime: DateTime.now(),
-    );
+    _lastError = null;
     notifyListeners();
 
-    // Stage 1: Finding technician
-    await Future.delayed(const Duration(seconds: 2));
-    _currentRequest = _currentRequest!.copyWith(
-      status: ServiceStatus.inProgress,
-    );
-    notifyListeners();
-
-    // Stage 2: Technician assigned and on the way
-    final result = await MockApiService.requestService(type);
-    _currentRequest = result;
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  /// Mark service as completed
-  void completeService() {
-    if (_currentRequest != null) {
-      _currentRequest = _currentRequest!.copyWith(
-        status: ServiceStatus.completed,
+    try {
+      var ticket = await _workflowService.createTicket(
+        serviceType: type,
+        issueImageReferences:
+            issueImageReference?.isNotEmpty == true ? [issueImageReference!] : const [],
       );
+
+      _currentRequest = ticket;
+      notifyListeners();
+
+      ticket = await _workflowService.autoDispatchToOnTheWay(
+        ticket: ticket,
+        technicianName: _pickTechnician(type),
+      );
+      _currentRequest = ticket;
+      notifyListeners();
+    } catch (e) {
+      _lastError = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Reset service request
+  Future<void> updateStatus(
+    TicketStatus nextStatus, {
+    required TicketActorRole role,
+  }) async {
+    final current = _currentRequest;
+    if (current == null) return;
+
+    _isLoading = true;
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      _currentRequest = await _workflowService.transitionStatus(
+        ticket: current,
+        to: nextStatus,
+        role: role,
+      );
+    } catch (e) {
+      _lastError = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> completeAndRequestVerification() async {
+    final current = _currentRequest;
+    if (current == null || current.status != TicketStatus.inProgress) return;
+
+    _isLoading = true;
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      _currentRequest =
+          await _workflowService.completeAndSendForCustomerVerification(current);
+    } catch (e) {
+      _lastError = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void resetRequest() {
     _currentRequest = null;
     _isLoading = false;
+    _lastError = null;
     notifyListeners();
+  }
+
+  String _pickTechnician(ServiceType type) {
+    final techNames = {
+      ServiceType.electrician: ['Rajesh Kumar', 'Amit Sharma', 'Vikram Singh'],
+      ServiceType.plumber: ['Suresh Patel', 'Mohan Das', 'Ravi Verma'],
+    };
+    final names = techNames[type] ?? ['Service Partner'];
+    return names[DateTime.now().millisecond % names.length];
   }
 }
