@@ -198,19 +198,18 @@ class _ServicesGrid extends StatelessWidget {
     return Column(
       children: [
         _GlassCard(
-          height: 192,
+          height: 128,
           onTap: onRequest,
           padding: const EdgeInsets.all(24),
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _IconTile(icon: Icons.handyman_outlined, size: 27, boxSize: 48),
-                  Icon(Icons.arrow_forward_ios, color: ServicesScreen._text, size: 28),
+                  Icon(Icons.handyman_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                  Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.1), size: 18),
                 ],
               ),
               _ServiceCopy(
@@ -276,13 +275,13 @@ class _SmallServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassCard(
-      height: 176,
+      height: 128,
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _IconTile(icon: icon, size: 24, boxSize: 40),
+          Icon(icon, color: Colors.white.withOpacity(0.4), size: 22),
           _ServiceCopy(title: title, subtitle: subtitle),
         ],
       ),
@@ -296,48 +295,44 @@ class _ClimateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassCard(
-      height: 176,
+      height: 128,
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _IconTile(icon: Icons.thermostat_outlined, size: 24, boxSize: 40),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Icon(Icons.thermostat_outlined, color: Colors.white.withOpacity(0.4), size: 22),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Climate',
-                    style: GoogleFonts.manrope(
-                      color: ServicesScreen._text,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      height: 1.25,
+                  const Text(
+                    '72°F',
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 10,
+                      color: Color(0xFFFBBC00),
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: 1.0,
                     ),
                   ),
-                  Text(
-                    '72°F',
-                    style: GoogleFonts.manrope(
-                      color: ServicesScreen._gold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFFBBC00).withOpacity(0.6),
                     ),
                   ),
                 ],
-              ),
-              Text(
-                'Indoor comfort control',
-                style: GoogleFonts.manrope(
-                  color: ServicesScreen._muted.withOpacity(0.56),
-                  fontSize: 12,
-                  height: 1.1,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              )
             ],
+          ),
+          const _ServiceCopy(
+            title: 'Climate',
+            subtitle: 'Indoor comfort control',
           ),
         ],
       ),
@@ -351,20 +346,23 @@ class _HousekeepingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassCard(
-      height: 122,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      child: Row(
+      height: 128,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const _IconTile(icon: Icons.cleaning_services_outlined, size: 31, boxSize: 56),
-          const SizedBox(width: 24),
-          const Expanded(
-            child: _ServiceCopy(
-              title: 'Housekeeping',
-              subtitle: 'Deep cleaning & laundry\nservices',
-              large: true,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(Icons.cleaning_services_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+              Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.1), size: 18),
+            ],
           ),
-          Icon(Icons.chevron_right, color: ServicesScreen._muted.withOpacity(0.18), size: 30),
+          const _ServiceCopy(
+            title: 'Housekeeping',
+            subtitle: 'Deep cleaning & laundry services',
+          ),
         ],
       ),
     );
@@ -388,22 +386,23 @@ class _ServiceCopy extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
-          style: GoogleFonts.manrope(
-            color: ServicesScreen._text,
-            fontSize: large ? 18 : 15,
-            fontWeight: FontWeight.w400,
-            height: 1.25,
+          title.toUpperCase(),
+          style: const TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 12,
+            letterSpacing: 1.2,
+            color: Color(0xE6FBF8F4),
+            fontWeight: FontWeight.w300,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           subtitle,
-          style: GoogleFonts.manrope(
-            color: ServicesScreen._muted.withOpacity(0.56),
-            fontSize: large ? 15 : 12,
-            fontWeight: FontWeight.w400,
-            height: 1.15,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontSize: 10,
+            color: const Color(0xFFA3A19E).withOpacity(0.4),
+            fontWeight: FontWeight.w300,
           ),
         ),
       ],
@@ -411,31 +410,6 @@ class _ServiceCopy extends StatelessWidget {
   }
 }
 
-class _IconTile extends StatelessWidget {
-  const _IconTile({
-    required this.icon,
-    required this.size,
-    required this.boxSize,
-  });
-
-  final IconData icon;
-  final double size;
-  final double boxSize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: boxSize,
-      height: boxSize,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.055),
-        borderRadius: BorderRadius.circular(boxSize == 56 ? 16 : 13),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Icon(icon, color: ServicesScreen._muted, size: size),
-    );
-  }
-}
 
 class _GlassCard extends StatelessWidget {
   const _GlassCard({
@@ -456,24 +430,17 @@ class _GlassCard extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          filter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
           child: Container(
             height: height,
             width: double.infinity,
             padding: padding,
             decoration: BoxDecoration(
-              color: ServicesScreen._surface.withOpacity(0.42),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.22),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: const Color(0xFF0E0E12).withOpacity(0.4),
+              border: Border.all(color: Colors.white.withOpacity(0.05), width: 0.5),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: child,
           ),

@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildHeroSection(user.name),
                     const SizedBox(height: 60),
-                    _buildOSModules(context),
+                    _buildSubscriptionDashboard(context),
                     const SizedBox(height: 60),
                     _buildResidenceFeed(key: _activityKey),
                   ],
@@ -218,14 +218,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildOSModules(BuildContext context) {
+  Widget _buildSubscriptionDashboard(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 24),
           child: Text(
-            'Residence Services'.toUpperCase(),
+            'Subscription & Usage'.toUpperCase(),
             style: TextStyle(
               fontFamily: 'Manrope',
               fontSize: 10,
@@ -239,11 +239,8 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildSmokedGlassCard(
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '/service-request',
-                  arguments: 'plumber',
-                ),
+                onTap: () => Navigator.pushNamed(context, '/subscription'),
+                height: 128,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -251,15 +248,32 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.handyman_outlined, color: Colors.white.withOpacity(0.4), size: 22),
-                        Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.1), size: 18),
+                        Icon(Icons.workspace_premium_outlined, color: const Color(0xFFFBBC00).withOpacity(0.8), size: 22),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFBBC00).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFFBBC00).withOpacity(0.3)),
+                          ),
+                          child: const Text(
+                            'ACTIVE',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 8,
+                              letterSpacing: 1.0,
+                              color: Color(0xFFFBBC00),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'MAINTENANCE',
+                          'HOMECARE GOLD PLAN',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 12,
@@ -270,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Request structural repairs or routine care',
+                          'Valid till 15 Aug 2026',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 10,
@@ -282,7 +296,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   ],
                 ),
-                height: 128,
               ),
             ),
           ],
@@ -292,17 +305,18 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildSmokedGlassCard(
-                onTap: () => _showModuleMessage(context, 'Security support is coming soon.'),
+                onTap: () {},
+                height: 128,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.shield_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                    Icon(Icons.build_circle_outlined, color: Colors.white.withOpacity(0.4), size: 22),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'SECURITY',
+                          'SERVICES USED',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 12,
@@ -313,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Home protection',
+                          '2 of 5 Free Visits',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 10,
@@ -325,23 +339,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   ],
                 ),
-                height: 128,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildSmokedGlassCard(
-                onTap: () => _showModuleMessage(context, 'Concierge assistance is coming soon.'),
+                onTap: () {},
+                height: 128,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.auto_awesome_outlined, color: Colors.white.withOpacity(0.4), size: 22),
+                    Icon(Icons.calendar_today_outlined, color: Colors.white.withOpacity(0.4), size: 22),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'CONCIERGE',
+                          'NEXT SERVICE',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 12,
@@ -352,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Lifestyle assistance',
+                          'Due in 12 days',
                           style: TextStyle(
                             fontFamily: 'Manrope',
                             fontSize: 10,
@@ -364,78 +378,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   ],
                 ),
-                height: 128,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildSmokedGlassCard(
-                onTap: () => _showModuleMessage(context, 'Climate controls are coming soon.'),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Icon(Icons.thermostat_outlined, color: Colors.white.withOpacity(0.4), size: 22),
-                        Row(
-                          children: [
-                            Text(
-                              '72°F',
-                              style: TextStyle(
-                                fontFamily: 'Manrope',
-                                fontSize: 10,
-                                color: const Color(0xFFFBBC00).withOpacity(0.8),
-                                fontWeight: FontWeight.w300,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFFFBBC00).withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'CLIMATE',
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontSize: 12,
-                            letterSpacing: 1.2,
-                            color: Color(0xE6FBF8F4),
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Indoor comfort & air purification',
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontSize: 10,
-                            color: const Color(0xFFA3A19E).withOpacity(0.4),
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-                height: 128,
               ),
             ),
           ],
