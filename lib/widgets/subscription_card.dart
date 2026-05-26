@@ -1,7 +1,7 @@
+// lib/widgets/subscription_card.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../core/constants.dart';
 
-/// Premium subscription plan card with optional "Best Value" badge
 class SubscriptionCard extends StatelessWidget {
   final String planName;
   final double price;
@@ -26,167 +26,142 @@ class SubscriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: isBestValue
-              ? const LinearGradient(
-                  colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF42A5F5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isBestValue ? null : Colors.white,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.identity()..scale(isSelected ? 1.02 : 1.0),
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected
-                ? AppConstants.accentOrange
-                : isBestValue
-                    ? Colors.transparent
-                    : AppConstants.grey300,
-            width: isSelected ? 3 : 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isBestValue
-                  ? AppConstants.primaryBlue.withAlpha(60)
-                  : Colors.black.withAlpha(15),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Plan name
-                Text(
-                  planName,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
-                    color: isBestValue
-                        ? Colors.white.withAlpha(200)
-                        : AppConstants.grey600,
-                  ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: isSelected 
+                    ? const Color(0xFF1A1A24).withOpacity(0.6) 
+                    : const Color(0xFF0E0E12).withOpacity(0.4),
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFFBBC00).withOpacity(0.5)
+                      : Colors.white.withOpacity(0.05),
+                  width: isSelected ? 1.0 : 0.5,
                 ),
-                const SizedBox(height: 8),
-                // Price
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${AppConstants.currencySymbol}${price.toInt()}',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        color: isBestValue ? Colors.white : AppConstants.primaryBlue,
-                        height: 1,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        planName,
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontSize: 12,
+                          letterSpacing: 2.4,
+                          color: isSelected ? const Color(0xFFFBBC00) : const Color(0xFFA3A19E),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
+                      if (isBestValue)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFBBC00).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFFBBC00).withOpacity(0.3)),
+                          ),
+                          child: const Text(
+                            'POPULAR',
+                            style: TextStyle(
+                              fontFamily: 'Manrope',
+                              fontSize: 8,
+                              letterSpacing: 1.5,
+                              color: Color(0xFFFBBC00),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '₹${price.toInt()}',
+                        style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 48,
+                          fontWeight: FontWeight.w200,
+                          color: Color(0xFFFBF8F4),
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
                         '/$duration',
                         style: TextStyle(
-                          fontSize: 16,
-                          color: isBestValue
-                              ? Colors.white.withAlpha(180)
-                              : AppConstants.grey600,
+                          fontFamily: 'Manrope',
+                          fontSize: 14,
+                          color: const Color(0xFFA3A19E).withOpacity(0.6),
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 1.0,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 13,
+                      color: const Color(0xFFA3A19E).withOpacity(0.8),
+                      height: 1.6,
+                      fontWeight: FontWeight.w300,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Description
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isBestValue
-                        ? Colors.white.withAlpha(220)
-                        : AppConstants.grey600,
-                    height: 1.5,
                   ),
-                ),
-                const SizedBox(height: 16),
-                // Features
-                _buildFeature('Unlimited service calls', isBestValue),
-                const SizedBox(height: 6),
-                _buildFeature('Priority technician assignment', isBestValue),
-                const SizedBox(height: 6),
-                _buildFeature('24/7 support', isBestValue),
-                if (isBestValue) ...[
-                  const SizedBox(height: 6),
-                  _buildFeature('Save ₹${(AppConstants.monthlyPrice * 12 - AppConstants.yearlyPrice).toInt()}', true),
+                  const SizedBox(height: 32),
+                  _buildFeature('Unlimited concierge requests', true),
+                  const SizedBox(height: 16),
+                  _buildFeature('Priority estate scheduling', isBestValue),
+                  const SizedBox(height: 16),
+                  _buildFeature('24/7 dedicated support', isBestValue),
                 ],
-              ],
-            ),
-            // Best Value badge
-            if (isBestValue)
-              Positioned(
-                top: -12,
-                right: -8,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: AppConstants.accentGradient,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppConstants.accentOrange.withAlpha(100),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.star_rounded, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        'BEST VALUE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFeature(String text, bool isDark) {
+  Widget _buildFeature(String text, bool isIncluded) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(
-          Icons.check_circle_rounded,
-          size: 18,
-          color: isDark ? AppConstants.accentGold : AppConstants.successGreen,
+          isIncluded ? Icons.check : Icons.close,
+          size: 14,
+          color: isIncluded ? const Color(0xFFFBBC00) : const Color(0xFFA3A19E).withOpacity(0.3),
         ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: isDark ? Colors.white.withAlpha(230) : AppConstants.grey800,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 13,
+              fontWeight: FontWeight.w300,
+              color: isIncluded ? const Color(0xE6FBF8F4) : const Color(0xFFA3A19E).withOpacity(0.4),
+              letterSpacing: 0.3,
+            ),
           ),
         ),
       ],
