@@ -1,7 +1,8 @@
 import 'dart:ui';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/subscription_provider.dart';
+import '../services/repositories/service_request_repository.dart';
 
 class ServiceRequestScreen extends StatefulWidget {
   const ServiceRequestScreen({super.key});
@@ -150,16 +151,51 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
   }
 
   void _submit() async {
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category')),
+      );
+      return;
+    }
+    if (_issueTitleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter an issue title')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 2000));
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      _showSuccessDialog();
+    try {
+      final subProvider = context.read<SubscriptionProvider>();
+      final saved = await ServiceRequestRepository().create(
+        categoryLabel: _selectedCategory!,
+        issueTitle: _issueTitleController.text,
+        description: _descriptionController.text,
+        location: _locationController.text,
+        contactPhone: _contactController.text,
+        notes: _notesController.text,
+        priorityLabel: _selectedPriority,
+        scheduledDate: _selectedDate,
+        timeSlot: _selectedTimeSlot,
+        aiAnalysis: _aiAnalysisDone ? _aiResult : null,
+        imageUrls: List<String>.from(_uploadedImages),
+        subscriptionActive: subProvider.hasActiveSubscription,
+      );
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        _showSuccessDialog(saved.requestId);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
     }
   }
 
-  void _showSuccessDialog() {
-    final ticketId = 'NVS-${1000 + Random().nextInt(8999)}';
+  void _showSuccessDialog(String ticketId) {
     showDialog(
       context: context,
       barrierDismissible: false,

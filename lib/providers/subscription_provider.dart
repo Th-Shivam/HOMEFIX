@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../core/db/collections.dart';
+import '../core/db/firestore_mapper.dart';
+import '../core/db/schema_enums.dart';
 import '../models/subscription_model.dart';
 import '../services/mock_api_service.dart';
 
@@ -46,16 +49,17 @@ class SubscriptionProvider extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final doc = await FirebaseFirestore.instance
-            .collection('subscriptions')
+            .collection(DbCollections.subscriptions)
             .doc(user.uid)
             .get();
         if (doc.exists) {
           final data = doc.data()!;
-          if (data['paymentStatus'] == 'active' || data['paymentStatus'] == 'done') {
+          if (DbEnums.isSubscriptionActive(data[DbFields.paymentStatus] as String?)) {
+            final plan = data[DbFields.planType] as String? ?? DbEnums.planYearly;
             _subscription = SubscriptionModel(
-              planType: PlanType.yearly, 
-              startDate: (data['subscriptionStartDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-              expiryDate: (data['subscriptionEndDate'] as Timestamp?)?.toDate() ?? DateTime.now().add(const Duration(days: 365)),
+              planType: plan == DbEnums.planMonthly ? PlanType.monthly : PlanType.yearly,
+              startDate: FirestoreMapper.timestampToDate(data[DbFields.subscriptionStartDate]) ?? DateTime.now(),
+              expiryDate: FirestoreMapper.timestampToDate(data[DbFields.subscriptionEndDate]) ?? DateTime.now().add(const Duration(days: 365)),
             );
           } else {
             _subscription = SubscriptionModel.empty;

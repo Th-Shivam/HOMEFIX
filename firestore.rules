@@ -2,9 +2,196 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && userDoc().data.role == 'admin';
+    }
+
+    function isTechnician() {
+      return isSignedIn()
+        && userDoc().data.role == 'technician';
+    }
+
+    function hasValidTimestamps() {
+      return request.resource.data.createdAt == request.time
+        || request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validUserCreate() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['uid', 'name', 'email', 'phone', 'authProvider', 'role', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
+        && d.uid == userId
+        && d.uid == request.auth.uid
+        && d.role == 'customer'
+        && d.isDeleted == false
+        && d.schemaVersion == 1
+        && d.authProvider in ['email', 'google'];
+    }
+
+    function validUserUpdate() {
+      let d = request.resource.data;
+      return d.uid == resource.data.uid
+        && d.email == resource.data.email
+        && d.role == resource.data.role
+        && d.isDeleted == resource.data.isDeleted;
+    }
+
+    function validSubscriptionCreate() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'name', 'mobile', 'address', 'planType', 'paymentStatus', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
+        && d.userId == request.auth.uid
+        && d.paymentStatus == 'pending'
+        && d.planType in ['monthly', 'yearly']
+        && d.isDeleted == false
+        && d.schemaVersion == 1;
+    }
+
+    function validSubscriptionCustomerUpdate() {
+      let d = request.resource.data;
+      return d.userId == resource.data.userId
+        && d.paymentStatus == resource.data.paymentStatus
+        && d.subscriptionStartDate == resource.data.subscriptionStartDate
+        && d.subscriptionEndDate == resource.data.subscriptionEndDate
+        && d.amount == resource.data.amount;
+    }
+
+    function validServiceRequestCreate() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['requestId', 'userId', 'category', 'issueTitle', 'description', 'location', 'contactPhone', 'priority', 'status', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
+        && d.userId == request.auth.uid
+        && d.status == 'requested'
+        && d.priority in ['low', 'medium', 'high', 'emergency']
+        && d.isDeleted == false
+        && d.schemaVersion == 1
+        && d.issueTitle.size() <= 120
+        && d.description.size() <= 2000;
+    }
+
+    function validServiceRequestCustomerUpdate() {
+      let d = request.resource.data;
+      return d.userId == resource.data.userId
+        && d.requestId == resource.data.requestId
+        && d.status in ['requested', 'cancelled'];
+    }
+
+    function validPaymentCreate() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['paymentId', 'userId', 'subscriptionId', 'amount', 'currency', 'planType', 'status', 'method', 'idempotencyKey', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
+        && d.userId == request.auth.uid
+        && d.status == 'pending'
+        && d.currency == 'INR'
+        && d.method in ['upi_manual', 'razorpay']
+        && d.planType in ['monthly', 'yearly']
+        && d.isDeleted == false
+        && d.schemaVersion == 1;
+    }
+
+    // ── users/{userId} ──────────────────────────────────────────────────────
     match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if isOwner(userId) && validUserCreate();
+      allow update: if (isOwner(userId) && validUserUpdate()) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+      allow delete: if false;
+    }
+
+    // ── subscriptions/{userId} ──────────────────────────────────────────────
+    match /subscriptions/{userId} {
+      allow create: if isOwner(userId) && validSubscriptionCreate();
+      allow update: if (isOwner(userId) && validSubscriptionCustomerUpdate()) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+      allow delete: if false;
+    }
+
+    // ── service_requests/{requestId} ────────────────────────────────────────
+    match /service_requests/{requestId} {
+      allow create: if isSignedIn() && validServiceRequestCreate();
+      allow update: if isSignedIn() && (
+        (resource.data.userId == request.auth.uid && validServiceRequestCustomerUpdate())
+        || isAdmin()
+        || (isTechnician() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'assignedWorkerId', 'assignedWorkerName', 'updatedAt', 'completedAt']))
+      );
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid
+        || isAdmin()
+        || isTechnician()
+      );
+      allow delete: if false;
+
+      match /status_history/{entryId} {
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/service_requests/$(requestId)).data.userId == request.auth.uid
+          || isAdmin()
+          || isTechnician()
+        );
+        allow create: if isAdmin() || isTechnician();
+        allow update, delete: if false;
+      }
+    }
+
+    // ── workers/{workerId} ──────────────────────────────────────────────────
+    match /workers/{workerId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ── payments/{paymentId} ────────────────────────────────────────────────
+    match /payments/{paymentId} {
+      allow create: if isSignedIn() && validPaymentCreate();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ── reviews/{reviewId} ──────────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow read: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── notifications/{notificationId} ──────────────────────────────────────
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'updatedAt']);
+      allow create, delete: if isAdmin();
+    }
+
+    // ── app_config/{docId} ──────────────────────────────────────────────────
+    match /app_config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── counters/{counterId} ────────────────────────────────────────────────
+    match /counters/{counterId} {
+      allow read: if isSignedIn() && counterId == 'service_tickets';
+      allow create: if isSignedIn()
+        && counterId == 'service_tickets'
+        && request.resource.data.lastNumber == 10000;
+      allow update: if isSignedIn()
+        && counterId == 'service_tickets'
+        && request.resource.data.lastNumber == resource.data.lastNumber + 1;
+      allow delete: if false;
     }
   }
 }

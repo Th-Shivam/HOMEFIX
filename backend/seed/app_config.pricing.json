@@ -1,0 +1,8 @@
+{
+  "monthlyPrice": 300,
+  "yearlyPrice": 3600,
+  "currency": "INR",
+  "emergencySlaMinutes": 120,
+  "maxOpenRequestsPerUser": 3,
+  "schemaVersion": 1
+}

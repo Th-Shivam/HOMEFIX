@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import '../services/repositories/user_repository.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -36,11 +36,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  void _saveProfile() {
-    // Implement save functionality logic here
-    // e.g. updating the auth provider or firestore
-    
-    ScaffoldMessenger.of(context).showSnackBar(
+  Future<void> _saveProfile() async {
+    try {
+      await UserRepository().updateProfile(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim().isEmpty
+            ? null
+            : _addressController.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Profile updated successfully.'),
         behavior: SnackBarBehavior.floating,
@@ -50,8 +56,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 110),
       ),
-    );
-    Navigator.pop(context);
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save profile: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red.shade800,
+        ),
+      );
+    }
   }
 
   @override

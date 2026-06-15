@@ -1,7 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../core/db/collections.dart';
+import '../core/db/firestore_mapper.dart';
+import '../core/db/schema_enums.dart';
 import '../models/user_model.dart';
+import '../services/repositories/user_repository.dart';
 
 /// AuthService — handles all Firebase Authentication operations.
 /// Supports Email/Password sign-in and Google Sign-In.
@@ -9,6 +13,7 @@ class AuthService {
   // ── Firebase instances ───────────────────────────────────────────────────
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final UserRepository _userRepository = UserRepository();
 
   // GoogleSignIn instance — scopes define what user data we request
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -41,18 +46,17 @@ class AuthService {
     required String phone,
   }) async {
     try {
-      final userRef = _firestore.collection('users').doc(uid);
+      final userRef = _firestore.collection(DbCollections.users).doc(uid);
       final docSnapshot = await userRef.get();
 
       if (!docSnapshot.exists) {
-        await userRef.set({
-          'uid': uid,
-          'name': name,
-          'email': email,
-          'phone': phone,
-          'authProvider': 'email',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        await userRef.set(_userRepository.newUserFields(
+          uid: uid,
+          name: name,
+          email: email,
+          phone: phone,
+          authProvider: DbEnums.authEmail,
+        ));
       }
       return true;
     } on FirebaseException catch (e) {
@@ -138,7 +142,7 @@ class AuthService {
 
       Map<String, dynamic>? data;
       try {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
+        final doc = await _firestore.collection(DbCollections.users).doc(user.uid).get();
         data = doc.data();
       } on FirebaseException catch (e) {
         if (e.code != 'permission-denied') rethrow;
@@ -194,19 +198,30 @@ class AuthService {
     // merge: true → won't overwrite existing data if the user re-logs in
     String? existingPhone;
     try {
-      final userRef = _firestore.collection('users').doc(firebaseUser.uid);
+      final userRef = _firestore.collection(DbCollections.users).doc(firebaseUser.uid);
       final userSnapshot = await userRef.get();
-      existingPhone = userSnapshot.data()?['phone'] as String?;
+      existingPhone = userSnapshot.data()?[DbFields.phone] as String?;
 
-      await userRef.set({
-        'uid': firebaseUser.uid,
-        'name': firebaseUser.displayName ?? googleAccount.displayName ?? 'User',
-        'email': firebaseUser.email ?? '',
-        'photoUrl': firebaseUser.photoURL,
-        'phone': existingPhone ?? '', // Google doesn't provide phone number
-        'provider': 'google',
-        'lastLoginAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      if (!userSnapshot.exists) {
+        await userRef.set({
+          ..._userRepository.newUserFields(
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName ?? googleAccount.displayName ?? 'User',
+            email: firebaseUser.email ?? '',
+            phone: existingPhone ?? '',
+            authProvider: DbEnums.authGoogle,
+          ),
+          DbFields.photoUrl: firebaseUser.photoURL,
+          DbFields.lastLoginAt: FieldValue.serverTimestamp(),
+        });
+      } else {
+        await userRef.update({
+          DbFields.name: firebaseUser.displayName ?? googleAccount.displayName ?? 'User',
+          DbFields.photoUrl: firebaseUser.photoURL,
+          DbFields.lastLoginAt: FieldValue.serverTimestamp(),
+          ...FirestoreMapper.updateFields(),
+        });
+      }
     } on FirebaseException catch (e) {
       if (e.code != 'permission-denied') rethrow;
     }
@@ -230,7 +245,7 @@ class AuthService {
     Map<String, dynamic>? data;
     try {
       final doc =
-          await _firestore.collection('users').doc(firebaseUser.uid).get();
+          await _firestore.collection(DbCollections.users).doc(firebaseUser.uid).get();
       data = doc.data();
     } on FirebaseException catch (e) {
       if (e.code != 'permission-denied') rethrow;
