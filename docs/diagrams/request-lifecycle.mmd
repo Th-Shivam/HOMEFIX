@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> requested : customer submits
+    requested --> finding_technician : system dispatches
+    finding_technician --> assigned : worker matched
+    assigned --> in_progress : work started
+    in_progress --> on_the_way : worker en route
+    on_the_way --> completed : job done
+    requested --> cancelled : cancel
+    finding_technician --> cancelled : cancel
+    assigned --> cancelled : cancel
+    in_progress --> cancelled : cancel
+    completed --> [*]
+    cancelled --> [*]

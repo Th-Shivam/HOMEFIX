@@ -1,0 +1,41 @@
+flowchart TB
+    subgraph AUTH["Firebase Auth"]
+        AUTH_UID["uid"]
+    end
+
+    subgraph FIRESTORE["Cloud Firestore"]
+        U[("users")]
+        S[("subscriptions")]
+        SR[("service_requests")]
+        SH[("status_history")]
+        W[("workers")]
+        P[("payments")]
+        R[("reviews")]
+        N[("notifications")]
+        AC[("app_config")]
+        C[("counters")]
+
+        U -->|"1:1"| S
+        U -->|"1:N"| SR
+        U -->|"1:N"| P
+        U -->|"1:N"| N
+        U -.->|"optional"| W
+        W -->|"assigns"| SR
+        SR -->|"subcollection"| SH
+        SR -->|"1:1 review"| R
+        W --> R
+        S --> P
+        C -->|"NVS-IDs"| SR
+        AC -.->|"pricing"| S
+    end
+
+    subgraph STORAGE["Firebase Storage"]
+        ST1["users/uid/avatar"]
+        ST2["service_requests/id/photos"]
+        ST3["payments/uid/proof"]
+    end
+
+    AUTH_UID --> U
+    SR -.-> ST2
+    U -.-> ST1
+    P -.-> ST3

@@ -1,0 +1,88 @@
+erDiagram
+    USERS ||--o| SUBSCRIPTIONS : "has"
+    USERS ||--o{ SERVICE_REQUESTS : "raises"
+    USERS ||--o{ PAYMENTS : "makes"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ REVIEWS : "writes"
+    USERS |o--o| WORKERS : "linkedUserId"
+    SUBSCRIPTIONS ||--o{ PAYMENTS : "paid_via"
+    WORKERS ||--o{ SERVICE_REQUESTS : "assigned_to"
+    WORKERS ||--o{ REVIEWS : "rated_in"
+    SERVICE_REQUESTS ||--|{ STATUS_HISTORY : "logs"
+    SERVICE_REQUESTS ||--o| REVIEWS : "has"
+    COUNTERS ||--o{ SERVICE_REQUESTS : "ticketId"
+    APP_CONFIG ||--o{ SUBSCRIPTIONS : "pricing"
+
+    USERS {
+        string uid PK
+        string name
+        string email
+        string phone
+        enum role
+        enum authProvider
+        timestamp createdAt
+    }
+
+    SUBSCRIPTIONS {
+        string userId PK
+        enum planType
+        enum paymentStatus
+        timestamp subscriptionEndDate
+        number amount
+    }
+
+    SERVICE_REQUESTS {
+        string requestId UK
+        string userId FK
+        string assignedWorkerId FK
+        enum category
+        enum status
+        enum priority
+    }
+
+    STATUS_HISTORY {
+        string entryId PK
+        string fromStatus
+        string toStatus
+        timestamp createdAt
+    }
+
+    WORKERS {
+        string workerId PK
+        string name
+        enum type
+        boolean available
+        number rating
+    }
+
+    PAYMENTS {
+        string paymentId PK
+        string userId FK
+        string idempotencyKey UK
+        enum status
+        number amount
+    }
+
+    REVIEWS {
+        string reviewId PK
+        string requestId FK
+        string workerId FK
+        number rating
+    }
+
+    NOTIFICATIONS {
+        string notificationId PK
+        string userId FK
+        boolean read
+    }
+
+    APP_CONFIG {
+        string docId PK
+        number monthlyPrice
+        number yearlyPrice
+    }
+
+    COUNTERS {
+        string counterId PK
+        number lastNumber
+    }

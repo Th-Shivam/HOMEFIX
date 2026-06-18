@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NIVASA — Database ER Diagrams</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0c0c0c;
+      --surface: #15161a;
+      --champagne: #e2d1c3;
+      --muted: #a3a19e;
+      --accent: #818cf8;
+      --border: rgba(226, 209, 195, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--champagne);
+      line-height: 1.6;
+      padding: 2rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-weight: 200;
+      letter-spacing: 0.35em;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+    header p { color: var(--muted); font-size: 0.9rem; }
+    .diagram-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2.5rem;
+      overflow-x: auto;
+    }
+    .diagram-section h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--champagne);
+    }
+    .diagram-section .desc {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      min-height: 120px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.9rem;
+      text-align: left;
+    }
+    th { background: rgba(129, 140, 248, 0.1); color: var(--accent); }
+    td code { color: var(--accent); font-size: 0.8rem; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 2rem;
+    }
+    .legend {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .legend span::before {
+      content: '■';
+      margin-right: 0.4rem;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NIVASA</h1>
+    <p>Production Firestore Database — ER Diagrams &amp; Architecture</p>
+    <p style="margin-top:0.5rem;font-size:0.8rem;">Schema v1.0 · Project: homefixvit</p>
+  </header>
+
+  <section class="diagram-section">
+    <h2>1. Entity Relationship Diagram</h2>
+    <p class="desc">All collections, primary keys, and relationships.</p>
+    <pre class="mermaid">
+erDiagram
+    USERS ||--o| SUBSCRIPTIONS : "has"
+    USERS ||--o{ SERVICE_REQUESTS : "raises"
+    USERS ||--o{ PAYMENTS : "makes"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ REVIEWS : "writes"
+    USERS |o--o| WORKERS : "linkedUserId"
+    SUBSCRIPTIONS ||--o{ PAYMENTS : "paid_via"
+    WORKERS ||--o{ SERVICE_REQUESTS : "assigned_to"
+    WORKERS ||--o{ REVIEWS : "rated_in"
+    SERVICE_REQUESTS ||--|{ STATUS_HISTORY : "logs"
+    SERVICE_REQUESTS ||--o| REVIEWS : "has"
+    COUNTERS ||--o{ SERVICE_REQUESTS : "ticketId"
+    APP_CONFIG ||--o{ SUBSCRIPTIONS : "pricing"
+
+    USERS {
+        string uid PK
+        string name
+        string email
+        string phone
+        enum role
+        enum authProvider
+        timestamp createdAt
+    }
+
+    SUBSCRIPTIONS {
+        string userId PK
+        enum planType
+        enum paymentStatus
+        timestamp subscriptionEndDate
+        number amount
+    }
+
+    SERVICE_REQUESTS {
+        string requestId UK
+        string userId FK
+        string assignedWorkerId FK
+        enum category
+        enum status
+        enum priority
+    }
+
+    STATUS_HISTORY {
+        string entryId PK
+        string fromStatus
+        string toStatus
+        timestamp createdAt
+    }
+
+    WORKERS {
+        string workerId PK
+        string name
+        enum type
+        boolean available
+        number rating
+    }
+
+    PAYMENTS {
+        string paymentId PK
+        string userId FK
+        string idempotencyKey UK
+        enum status
+        number amount
+    }
+
+    REVIEWS {
+        string reviewId PK
+        string requestId FK
+        string workerId FK
+        number rating
+    }
+
+    NOTIFICATIONS {
+        string notificationId PK
+        string userId FK
+        boolean read
+    }
+
+    APP_CONFIG {
+        string docId PK
+        number monthlyPrice
+        number yearlyPrice
+    }
+
+    COUNTERS {
+        string counterId PK
+        number lastNumber
+    }
+    </pre>
+    <div class="legend">
+      <span>PK = Primary Key</span>
+      <span>FK = Foreign Key</span>
+      <span>UK = Unique Key</span>
+    </div>
+  </section>
+
+  <section class="diagram-section">
+    <h2>2. Architecture Overview</h2>
+    <p class="desc">Firebase Auth, Firestore collections, and Storage paths.</p>
+    <pre class="mermaid">
+flowchart TB
+    subgraph AUTH["Firebase Auth"]
+        AUTH_UID["uid"]
+    end
+
+    subgraph FIRESTORE["Cloud Firestore"]
+        U[("users")]
+        S[("subscriptions")]
+        SR[("service_requests")]
+        SH[("status_history")]
+        W[("workers")]
+        P[("payments")]
+        R[("reviews")]
+        N[("notifications")]
+        AC[("app_config")]
+        C[("counters")]
+
+        U -->|"1:1"| S
+        U -->|"1:N"| SR
+        U -->|"1:N"| P
+        U -->|"1:N"| N
+        U -.->|"optional"| W
+        W -->|"assigns"| SR
+        SR -->|"subcollection"| SH
+        SR -->|"1:1 review"| R
+        W --> R
+        S --> P
+        C -->|"NVS-IDs"| SR
+        AC -.->|"pricing"| S
+    end
+
+    subgraph STORAGE["Firebase Storage"]
+        ST1["users/uid/avatar"]
+        ST2["service_requests/id/photos"]
+        ST3["payments/uid/proof"]
+    end
+
+    AUTH_UID --> U
+    SR -.-> ST2
+    U -.-> ST1
+    P -.-> ST3
+    </pre>
+  </section>
+
+  <section class="diagram-section">
+    <h2>3. Service Request Lifecycle</h2>
+    <p class="desc">Status transitions from submit to complete or cancel.</p>
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> requested : customer submits
+    requested --> finding_technician : system dispatches
+    finding_technician --> assigned : worker matched
+    assigned --> in_progress : work started
+    in_progress --> on_the_way : worker en route
+    on_the_way --> completed : job done
+    requested --> cancelled : cancel
+    finding_technician --> cancelled : cancel
+    assigned --> cancelled : cancel
+    in_progress --> cancelled : cancel
+    completed --> [*]
+    cancelled --> [*]
+    </pre>
+  </section>
+
+  <section class="diagram-section">
+    <h2>4. Relationship Table</h2>
+    <table>
+      <thead>
+        <tr><th>From</th><th>To</th><th>Cardinality</th><th>Join Key</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>users</code></td><td><code>subscriptions</code></td><td>1 : 1</td><td><code>uid</code> = <code>userId</code></td></tr>
+        <tr><td><code>users</code></td><td><code>service_requests</code></td><td>1 : N</td><td><code>uid</code> = <code>userId</code></td></tr>
+        <tr><td><code>users</code></td><td><code>payments</code></td><td>1 : N</td><td><code>uid</code> = <code>userId</code></td></tr>
+        <tr><td><code>users</code></td><td><code>notifications</code></td><td>1 : N</td><td><code>uid</code> = <code>userId</code></td></tr>
+        <tr><td><code>workers</code></td><td><code>service_requests</code></td><td>1 : N</td><td><code>workerId</code> = <code>assignedWorkerId</code></td></tr>
+        <tr><td><code>service_requests</code></td><td><code>status_history</code></td><td>1 : N</td><td>subcollection</td></tr>
+        <tr><td><code>service_requests</code></td><td><code>reviews</code></td><td>1 : 0..1</td><td><code>requestId</code></td></tr>
+        <tr><td><code>subscriptions</code></td><td><code>payments</code></td><td>1 : N</td><td><code>userId</code> = <code>subscriptionId</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>NIVASA / HomeFix Pro · Open this file in any browser to view live diagrams</footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#1a1a2e',
+        primaryTextColor: '#e2d1c3',
+        primaryBorderColor: '#818cf8',
+        lineColor: '#818cf8',
+        secondaryColor: '#15161a',
+        tertiaryColor: '#0c0c0c',
+        fontFamily: 'Segoe UI, system-ui, sans-serif',
+      },
+      er: { useMaxWidth: true },
+      flowchart: { curve: 'basis', htmlLabels: true },
+    });
+  </script>
+</body>
+</html>
