@@ -70,9 +70,9 @@ class ServiceRequestRepository {
     required String priorityLabel,
     DateTime? scheduledDate,
     String? timeSlot,
+    String? addressId,
     Map<String, dynamic>? aiAnalysis,
-    List<String> imageUrls = const [],
-    bool subscriptionActive = false,
+    double? estimatedCost,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -91,22 +91,26 @@ class ServiceRequestRepository {
       docId: docRef.id,
       requestId: ticketId,
       userId: user.uid,
-      category: DbEnums.categoryFromLabel(categoryLabel),
-      issueTitle: issueTitle.trim(),
+      categoryId: DbEnums.categoryFromLabel(categoryLabel),
+      title: issueTitle.trim(),
       description: description.trim(),
-      location: location.trim(),
+      addressId: addressId,
       contactPhone: contactPhone.trim(),
       notes: notes.trim(),
       priority: DbEnums.priorityFromLabel(priorityLabel),
       status: DbEnums.statusRequested,
-      scheduledDate: scheduledDate,
+      scheduledAt: scheduledDate,
       timeSlot: timeSlot,
       aiAnalysis: aiAnalysis,
-      imageUrls: imageUrls,
-      subscriptionActive: subscriptionActive,
+      estimatedCost: estimatedCost,
     );
 
-    await docRef.set(document.toCreateMap());
+    final data = document.toCreateMap();
+    if (addressId == null && location.trim().isNotEmpty) {
+      data[DbFields.location] = location.trim();
+    }
+
+    await docRef.set(data);
     final saved = await docRef.get();
     return ServiceRequestDocument.fromFirestore(saved);
   }
@@ -138,6 +142,7 @@ class ServiceRequestRepository {
     await _collection.doc(docId).update({
       DbFields.status: DbEnums.statusCancelled,
       DbFields.cancelReason: reason,
+      DbFields.cancelledAt: FieldValue.serverTimestamp(),
       DbFields.updatedAt: FieldValue.serverTimestamp(),
     });
   }

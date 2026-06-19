@@ -1,0 +1,31 @@
+[
+  {
+    "planId": "monthly_standard",
+    "name": "NIVASA Monthly",
+    "price": 300,
+    "currency": "INR",
+    "billingCycle": "monthly",
+    "benefits": [
+      "Unlimited service calls",
+      "Priority support",
+      "Emergency response within 2 hours"
+    ],
+    "isActive": true,
+    "schemaVersion": 2
+  },
+  {
+    "planId": "yearly_standard",
+    "name": "NIVASA Annual",
+    "price": 3600,
+    "currency": "INR",
+    "billingCycle": "yearly",
+    "benefits": [
+      "Unlimited service calls for 1 year",
+      "Priority support",
+      "Emergency response within 2 hours",
+      "Free annual home inspection"
+    ],
+    "isActive": true,
+    "schemaVersion": 2
+  }
+]

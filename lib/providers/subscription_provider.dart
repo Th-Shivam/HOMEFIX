@@ -47,26 +47,46 @@ class SubscriptionProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final doc = await FirebaseFirestore.instance
+      if (user == null) return;
+
+      Map<String, dynamic>? data;
+
+      // v2: query active subscription by userId
+      final v2Snap = await FirebaseFirestore.instance
+          .collection(DbCollections.subscriptions)
+          .where(DbFields.userId, isEqualTo: user.uid)
+          .where(DbFields.status, whereIn: [DbEnums.subActive, DbEnums.paymentActive, DbEnums.paymentDone])
+          .limit(1)
+          .get();
+      if (v2Snap.docs.isNotEmpty) {
+        data = v2Snap.docs.first.data();
+      } else {
+        // legacy: subscriptions/{userId}
+        final legacy = await FirebaseFirestore.instance
             .collection(DbCollections.subscriptions)
             .doc(user.uid)
             .get();
-        if (doc.exists) {
-          final data = doc.data()!;
-          if (DbEnums.isSubscriptionActive(data[DbFields.paymentStatus] as String?)) {
-            final plan = data[DbFields.planType] as String? ?? DbEnums.planYearly;
-            _subscription = SubscriptionModel(
-              planType: plan == DbEnums.planMonthly ? PlanType.monthly : PlanType.yearly,
-              startDate: FirestoreMapper.timestampToDate(data[DbFields.subscriptionStartDate]) ?? DateTime.now(),
-              expiryDate: FirestoreMapper.timestampToDate(data[DbFields.subscriptionEndDate]) ?? DateTime.now().add(const Duration(days: 365)),
-            );
-          } else {
-            _subscription = SubscriptionModel.empty;
-          }
+        if (legacy.exists) data = legacy.data();
+      }
+
+      if (data != null) {
+        final status = (data[DbFields.status] ?? data[DbFields.paymentStatus]) as String?;
+        if (DbEnums.isSubscriptionActive(status)) {
+          final plan = data[DbFields.planType] as String? ?? DbEnums.planYearly;
+          _subscription = SubscriptionModel(
+            planType: plan == DbEnums.planMonthly ? PlanType.monthly : PlanType.yearly,
+            startDate: FirestoreMapper.timestampToDate(
+                  data[DbFields.startDate] ?? data[DbFields.subscriptionStartDate]) ??
+                DateTime.now(),
+            expiryDate: FirestoreMapper.timestampToDate(
+                  data[DbFields.endDate] ?? data[DbFields.subscriptionEndDate]) ??
+                DateTime.now().add(const Duration(days: 365)),
+          );
         } else {
           _subscription = SubscriptionModel.empty;
         }
+      } else {
+        _subscription = SubscriptionModel.empty;
       }
     } catch (e) {
       debugPrint('SyncError: $e');

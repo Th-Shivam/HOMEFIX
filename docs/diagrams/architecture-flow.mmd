@@ -3,39 +3,66 @@ flowchart TB
         AUTH_UID["uid"]
     end
 
-    subgraph FIRESTORE["Cloud Firestore"]
+    subgraph CORE["Core"]
         U[("users")]
-        S[("subscriptions")]
+        A[("addresses")]
+        EC[("emergency_contacts")]
+    end
+
+    subgraph CATALOG["Catalog"]
+        SC[("service_categories")]
+        MP[("membership_plans")]
+        AC[("app_config")]
+    end
+
+    subgraph REQUESTS["Service Flow"]
         SR[("service_requests")]
+        RA[("request_assignments")]
+        RI[("request_images")]
+        CM[("chat_messages")]
         SH[("status_history")]
+        INV[("invoices")]
+    end
+
+    subgraph WORKFORCE["Workforce"]
         W[("workers")]
-        P[("payments")]
+        WLT[("worker_location_tracking")]
+    end
+
+    subgraph BILLING["Billing"]
+        SUB[("subscriptions")]
+        PAY[("payments")]
+    end
+
+    subgraph ENGAGEMENT["Engagement"]
         R[("reviews")]
         N[("notifications")]
-        AC[("app_config")]
-        C[("counters")]
-
-        U -->|"1:1"| S
-        U -->|"1:N"| SR
-        U -->|"1:N"| P
-        U -->|"1:N"| N
-        U -.->|"optional"| W
-        W -->|"assigns"| SR
-        SR -->|"subcollection"| SH
-        SR -->|"1:1 review"| R
-        W --> R
-        S --> P
-        C -->|"NVS-IDs"| SR
-        AC -.->|"pricing"| S
+        ST[("support_tickets")]
     end
 
-    subgraph STORAGE["Firebase Storage"]
-        ST1["users/uid/avatar"]
-        ST2["service_requests/id/photos"]
-        ST3["payments/uid/proof"]
-    end
+    C[("counters")]
 
     AUTH_UID --> U
-    SR -.-> ST2
-    U -.-> ST1
-    P -.-> ST3
+    U --> A
+    U --> EC
+    U --> SR
+    U --> SUB
+    U --> PAY
+    U --> R
+    U --> N
+    U --> ST
+    A --> SR
+    SC --> SR
+    MP --> SUB
+    SR --> RA
+    SR --> RI
+    SR --> CM
+    SR --> SH
+    SR --> INV
+    SR --> PAY
+    SR --> R
+    W --> RA
+    W --> WLT
+    W --> R
+    SUB --> PAY
+    C --> SR

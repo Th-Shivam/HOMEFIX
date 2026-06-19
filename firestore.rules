@@ -3,161 +3,104 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-    function isSignedIn() {
-      return request.auth != null;
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function userDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function isAdmin() { return isSignedIn() && userDoc().data.role == 'admin'; }
+    function isTechnician() { return isSignedIn() && userDoc().data.role == 'technician'; }
+
+    function ownsRequest(requestId) {
+      return get(/databases/$(database)/documents/service_requests/$(requestId)).data.userId == request.auth.uid;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function isAdmin() {
-      return isSignedIn()
-        && userDoc().data.role == 'admin';
-    }
-
-    function isTechnician() {
-      return isSignedIn()
-        && userDoc().data.role == 'technician';
-    }
-
-    function hasValidTimestamps() {
-      return request.resource.data.createdAt == request.time
-        || request.resource.data.createdAt == resource.data.createdAt;
-    }
-
-    function validUserCreate() {
-      let d = request.resource.data;
-      return d.keys().hasAll(['uid', 'name', 'email', 'phone', 'authProvider', 'role', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
-        && d.uid == userId
-        && d.uid == request.auth.uid
-        && d.role == 'customer'
-        && d.isDeleted == false
-        && d.schemaVersion == 1
-        && d.authProvider in ['email', 'google'];
-    }
-
-    function validUserUpdate() {
-      let d = request.resource.data;
-      return d.uid == resource.data.uid
-        && d.email == resource.data.email
-        && d.role == resource.data.role
-        && d.isDeleted == resource.data.isDeleted;
-    }
-
-    function validSubscriptionCreate() {
-      let d = request.resource.data;
-      return d.keys().hasAll(['userId', 'name', 'mobile', 'address', 'planType', 'paymentStatus', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
-        && d.userId == request.auth.uid
-        && d.paymentStatus == 'pending'
-        && d.planType in ['monthly', 'yearly']
-        && d.isDeleted == false
-        && d.schemaVersion == 1;
-    }
-
-    function validSubscriptionCustomerUpdate() {
-      let d = request.resource.data;
-      return d.userId == resource.data.userId
-        && d.paymentStatus == resource.data.paymentStatus
-        && d.subscriptionStartDate == resource.data.subscriptionStartDate
-        && d.subscriptionEndDate == resource.data.subscriptionEndDate
-        && d.amount == resource.data.amount;
-    }
-
-    function validServiceRequestCreate() {
-      let d = request.resource.data;
-      return d.keys().hasAll(['requestId', 'userId', 'category', 'issueTitle', 'description', 'location', 'contactPhone', 'priority', 'status', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
-        && d.userId == request.auth.uid
-        && d.status == 'requested'
-        && d.priority in ['low', 'medium', 'high', 'emergency']
-        && d.isDeleted == false
-        && d.schemaVersion == 1
-        && d.issueTitle.size() <= 120
-        && d.description.size() <= 2000;
-    }
-
-    function validServiceRequestCustomerUpdate() {
-      let d = request.resource.data;
-      return d.userId == resource.data.userId
-        && d.requestId == resource.data.requestId
-        && d.status in ['requested', 'cancelled'];
-    }
-
-    function validPaymentCreate() {
-      let d = request.resource.data;
-      return d.keys().hasAll(['paymentId', 'userId', 'subscriptionId', 'amount', 'currency', 'planType', 'status', 'method', 'idempotencyKey', 'schemaVersion', 'createdAt', 'updatedAt', 'isDeleted'])
-        && d.userId == request.auth.uid
-        && d.status == 'pending'
-        && d.currency == 'INR'
-        && d.method in ['upi_manual', 'razorpay']
-        && d.planType in ['monthly', 'yearly']
-        && d.isDeleted == false
-        && d.schemaVersion == 1;
-    }
-
-    // ── users/{userId} ──────────────────────────────────────────────────────
+    // ── users ───────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow create: if isOwner(userId) && validUserCreate();
-      allow update: if (isOwner(userId) && validUserUpdate()) || isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.role == 'customer'
+        && request.resource.data.uid == userId;
       allow read: if isOwner(userId) || isAdmin();
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if false;
     }
 
-    // ── subscriptions/{userId} ──────────────────────────────────────────────
-    match /subscriptions/{userId} {
-      allow create: if isOwner(userId) && validSubscriptionCreate();
-      allow update: if (isOwner(userId) && validSubscriptionCustomerUpdate()) || isAdmin();
-      allow read: if isOwner(userId) || isAdmin();
-      allow delete: if false;
+    // ── addresses ───────────────────────────────────────────────────────────
+    match /addresses/{addressId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
-    // ── service_requests/{requestId} ────────────────────────────────────────
+    // ── service_categories ──────────────────────────────────────────────────
+    match /service_categories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── service_requests ────────────────────────────────────────────────────
     match /service_requests/{requestId} {
-      allow create: if isSignedIn() && validServiceRequestCreate();
-      allow update: if isSignedIn() && (
-        (resource.data.userId == request.auth.uid && validServiceRequestCustomerUpdate())
-        || isAdmin()
-        || (isTechnician() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'assignedWorkerId', 'assignedWorkerName', 'updatedAt', 'completedAt']))
-      );
-      allow read: if isSignedIn() && (
-        resource.data.userId == request.auth.uid
-        || isAdmin()
-        || isTechnician()
-      );
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin() || isTechnician());
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin() || isTechnician());
       allow delete: if false;
 
       match /status_history/{entryId} {
-        allow read: if isSignedIn() && (
-          get(/databases/$(database)/documents/service_requests/$(requestId)).data.userId == request.auth.uid
-          || isAdmin()
-          || isTechnician()
-        );
+        allow read: if isSignedIn() && (ownsRequest(requestId) || isAdmin() || isTechnician());
         allow create: if isAdmin() || isTechnician();
         allow update, delete: if false;
       }
+      match /chat_messages/{messageId} {
+        allow read: if isSignedIn() && (ownsRequest(requestId) || isAdmin() || isTechnician());
+        allow create: if isSignedIn() && (ownsRequest(requestId) || isTechnician() || isAdmin());
+        allow update: if isSignedIn() && resource.data.senderId == request.auth.uid;
+        allow delete: if false;
+      }
+      match /request_images/{imageId} {
+        allow read: if isSignedIn() && (ownsRequest(requestId) || isAdmin() || isTechnician());
+        allow create: if isSignedIn() && ownsRequest(requestId);
+        allow delete: if isAdmin();
+      }
     }
 
-    // ── workers/{workerId} ──────────────────────────────────────────────────
+    // ── request_assignments ─────────────────────────────────────────────────
+    match /request_assignments/{assignmentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isTechnician();
+    }
+
+    // ── request_images (top-level mirror) ───────────────────────────────────
+    match /request_images/{imageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uploadedBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ── chat_messages (top-level mirror) ────────────────────────────────────
+    match /chat_messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.senderId == request.auth.uid;
+    }
+
+    // ── status_history (top-level mirror) ───────────────────────────────────
+    match /status_history/{entryId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || isTechnician();
+    }
+
+    // ── workers ─────────────────────────────────────────────────────────────
     match /workers/{workerId} {
       allow read: if isSignedIn();
-      allow create, update: if isAdmin();
-      allow delete: if false;
+      allow write: if isAdmin();
     }
 
-    // ── payments/{paymentId} ────────────────────────────────────────────────
-    match /payments/{paymentId} {
-      allow create: if isSignedIn() && validPaymentCreate();
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if isAdmin();
-      allow delete: if false;
+    // ── worker_location_tracking ────────────────────────────────────────────
+    match /worker_location_tracking/{trackingId} {
+      allow read: if isSignedIn();
+      allow create, update: if isTechnician() || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // ── reviews/{reviewId} ──────────────────────────────────────────────────
+    // ── reviews ─────────────────────────────────────────────────────────────
     match /reviews/{reviewId} {
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
@@ -167,29 +110,65 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // ── notifications/{notificationId} ──────────────────────────────────────
+    // ── payments ────────────────────────────────────────────────────────────
+    match /payments/{paymentId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // ── invoices ────────────────────────────────────────────────────────────
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ── subscriptions (v2: subscriptionId PK) ───────────────────────────────
+    match /subscriptions/{subscriptionId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow delete: if false;
+    }
+
+    // ── membership_plans ────────────────────────────────────────────────────
+    match /membership_plans/{planId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── notifications ─────────────────────────────────────────────────────
     match /notifications/{notificationId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'updatedAt']);
+      allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create, delete: if isAdmin();
     }
 
-    // ── app_config/{docId} ──────────────────────────────────────────────────
+    // ── emergency_contacts ──────────────────────────────────────────────────
+    match /emergency_contacts/{contactId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // ── support_tickets ─────────────────────────────────────────────────────
+    match /support_tickets/{ticketId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow delete: if false;
+    }
+
+    // ── app_config ──────────────────────────────────────────────────────────
     match /app_config/{docId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // ── counters/{counterId} ────────────────────────────────────────────────
+    // ── counters ────────────────────────────────────────────────────────────
     match /counters/{counterId} {
       allow read: if isSignedIn() && counterId == 'service_tickets';
-      allow create: if isSignedIn()
-        && counterId == 'service_tickets'
+      allow create: if isSignedIn() && counterId == 'service_tickets'
         && request.resource.data.lastNumber == 10000;
-      allow update: if isSignedIn()
-        && counterId == 'service_tickets'
+      allow update: if isSignedIn() && counterId == 'service_tickets'
         && request.resource.data.lastNumber == resource.data.lastNumber + 1;
       allow delete: if false;
     }

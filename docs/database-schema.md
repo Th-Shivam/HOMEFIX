@@ -1,334 +1,419 @@
-# NIVASA — Production Firestore Database Schema
+# NIVASA — Production Firestore Database Schema v2
 
-**Version:** 1.0  
-**Backend:** Google Cloud Firestore + Firebase Storage + Firebase Auth  
-**Project:** `homefixvit`  
-**Last updated:** 2026-06-15
+**Version:** 2.0  
+**Backend:** Cloud Firestore + Firebase Storage + Firebase Auth  
+**Project:** `homefixvit`
 
----
-
-## Design principles
-
-| Principle | Implementation |
-|-----------|----------------|
-| **Single source of truth** | Firestore is the system of record; no parallel mock stores in production |
-| **Schema versioning** | Every document carries `schemaVersion` for safe migrations |
-| **Auditability** | `createdAt`, `updatedAt`, `createdBy`; status changes logged in subcollections |
-| **Least privilege** | Security rules enforce role, ownership, and immutable admin fields |
-| **Denormalization** | Worker name on tickets for fast mobile reads |
-| **Idempotency** | Payments keyed by `idempotencyKey`; subscriptions 1:1 with `userId` |
-| **Soft delete** | `isDeleted` flag — never hard-delete customer data from clients |
-| **Server timestamps** | All temporal fields use `FieldValue.serverTimestamp()` on write |
+Supports full UI flow: **Home → Raise Request → Track → Chat → Invoice → Membership**
 
 ---
 
-## Architecture
+## Entity overview (20 collections)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Firebase Auth                             │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│                     Cloud Firestore                              │
-│  ┌──────────┐  ┌───────────────┐  ┌─────────────────┐          │
-│  │  users   │──│ subscriptions │  │ service_requests │         │
-│  └──────────┘  └───────────────┘  └────────┬────────┘          │
-│       │              │                      │                    │
-│       │         ┌────▼────┐          ┌──────▼──────┐             │
-│       │         │ payments│          │status_history│ (subcoll)  │
-│       │         └─────────┘          └─────────────┘             │
-│       │                              ┌──────────┐                │
-│       └──────────────────────────────│ workers  │                │
-│                                      └──────────┘                │
-│  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐            │
-│  │ notifications│  │   reviews    │  │ app_config  │            │
-│  └──────────────┘  └──────────────┘  └─────────────┘            │
-│  ┌──────────────┐                                                │
-│  │   counters   │  ← atomic ticket IDs (transaction)           │
-│  └──────────────┘                                                │
-└─────────────────────────────────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│                    Firebase Storage                              │
-│  users/{uid}/avatar.*                                            │
-│  service_requests/{requestId}/{uuid}.jpg                         │
-│  payments/{uid}/proof_{paymentId}.jpg                            │
-└─────────────────────────────────────────────────────────────────┘
-```
+| # | Collection | Doc ID | Purpose |
+|---|------------|--------|---------|
+| 1 | `users` | Auth UID | Customer / technician / admin profile |
+| 2 | `addresses` | Auto | Saved addresses (multiple per user) |
+| 3 | `service_categories` | Auto / slug | Plumbing, Electrical, etc. |
+| 4 | `service_requests` | Auto | Core ticket entity |
+| 5 | `request_assignments` | Auto | Assignment + reassignment history |
+| 6 | `request_images` | Auto | Before / after / invoice photos |
+| 7 | `chat_messages` | Auto | Per-request chat |
+| 8 | `status_history` | Auto | Audit log (also subcollection) |
+| 9 | `workers` | Auto | Technician profiles |
+| 10 | `worker_location_tracking` | Auto | Live GPS pings |
+| 11 | `reviews` | Auto | Post-job ratings |
+| 12 | `payments` | Auto | All payment records |
+| 13 | `invoices` | Auto | Generated invoices |
+| 14 | `subscriptions` | Auto | Membership records (multiple per user) |
+| 15 | `membership_plans` | Auto / slug | Plan catalog |
+| 16 | `notifications` | Auto | Push / in-app |
+| 17 | `emergency_contacts` | Auto | Profile emergency contacts |
+| 18 | `support_tickets` | Auto | Customer support |
+| 19 | `app_config` | Singleton | Global settings |
+| 20 | `counters` | Singleton | Atomic IDs |
 
 ---
 
-## Global field conventions
+## Global fields (every document)
 
-Every top-level document SHOULD include:
+| Field | Type | Required |
+|-------|------|----------|
+| `schemaVersion` | number | yes (`2`) |
+| `createdAt` | timestamp | yes |
+| `updatedAt` | timestamp | yes |
+| `isDeleted` | boolean | yes (default `false`) |
+
+---
+
+## 1. `users/{userId}`
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `schemaVersion` | number | yes | Current: `1` |
-| `createdAt` | timestamp | yes | Server timestamp on create |
-| `updatedAt` | timestamp | yes | Server timestamp on every write |
-| `isDeleted` | boolean | yes | Default `false`; soft delete |
+| `uid` | string | yes | PK, immutable |
+| `name` | string | yes | |
+| `email` | string | yes | immutable |
+| `phone` | string | yes | |
+| `photoUrl` | string | no | |
+| `defaultAddressId` | string | no | FK → `addresses` |
+| `authProvider` | enum | yes | `email` \| `google` |
+| `role` | enum | yes | `customer` \| `technician` \| `admin` |
+| `onboardingCompleted` | boolean | yes | |
+| `fcmToken` | string | no | |
+| `lastLoginAt` | timestamp | no | |
 
 ---
 
-## Collections
+## 2. `addresses/{addressId}`
 
-### 1. `users/{userId}`
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `addressId` | string | yes | PK |
+| `userId` | string | yes | FK → `users` |
+| `label` | string | yes | Home, Office, Tower A |
+| `houseNumber` | string | no | Flat 204 |
+| `street` | string | yes | Street / society |
+| `city` | string | yes | |
+| `state` | string | yes | |
+| `pincode` | string | yes | |
+| `latitude` | number | no | |
+| `longitude` | number | no | |
+| `isDefault` | boolean | yes | One default per user |
 
-| Field | Type | Required | Mutable by | Description |
-|-------|------|----------|------------|-------------|
-| `uid` | string | yes | — (immutable) | Firebase Auth UID |
-| `name` | string | yes | owner, admin | Display name |
-| `email` | string | yes | — (immutable) | From Auth |
-| `phone` | string | yes | owner, admin | E.164 or `+91 …` |
-| `photoUrl` | string | no | owner | Profile image URL |
-| `address` | string | no | owner | Service address |
-| `authProvider` | enum | yes | — | `email` \| `google` |
-| `role` | enum | yes | admin only | `customer` \| `technician` \| `admin` |
-| `onboardingCompleted` | boolean | yes | owner | Default `false` |
-| `fcmToken` | string | no | owner | Push notification token |
-| `lastLoginAt` | timestamp | no | system | Updated on sign-in |
-
-**Indexes:** `role` + `createdAt` (admin dashboard)
-
-**Security:** Users cannot self-promote to `admin` or `technician`.
+**Relationships:** `users` 1→N `addresses`; `service_requests.addressId` → `addresses`
 
 ---
 
-### 2. `subscriptions/{userId}`
+## 3. `service_categories/{categoryId}`
 
-Document ID = user UID (enforces 1 active subscription record per user).
-
-| Field | Type | Required | Mutable by | Description |
-|-------|------|----------|------------|-------------|
-| `userId` | string | yes | — (immutable) | Owner UID |
-| `email` | string | yes | owner | Billing email |
-| `name` | string | yes | owner | Subscriber name |
-| `mobile` | string | yes | owner | Primary contact |
-| `alternateMobile` | string | no | owner | Secondary contact |
-| `address` | string | yes | owner | Service location |
-| `planType` | enum | yes | owner (create) | `monthly` \| `yearly` |
-| `amount` | number | yes | admin | INR amount |
-| `currency` | string | yes | — | Always `INR` |
-| `subscriptionStartDate` | timestamp | yes | admin | Plan start |
-| `subscriptionEndDate` | timestamp | yes | admin | Plan expiry |
-| `paymentStatus` | enum | yes | admin* | See enum below |
-| `paymentMethod` | enum | no | owner (create) | `upi_manual` \| `razorpay` |
-| `paymentReference` | string | no | owner | UPI ref / gateway ID |
-| `autoRenew` | boolean | no | owner | Default `false` |
-| `cancelledAt` | timestamp | no | admin | Cancellation time |
-| `cancelReason` | string | no | owner/admin | Free text |
-
-**`paymentStatus` enum**
-
-| Value | Who sets | Meaning |
-|-------|----------|---------|
-| `pending` | customer (create) | Awaiting verification |
-| `active` | admin / Cloud Function | Verified + valid dates |
-| `done` | legacy | Treat as `active` in app |
-| `expired` | Cloud Function (scheduled) | Past end date |
-| `cancelled` | admin | Manually cancelled |
-| `rejected` | admin | Payment proof rejected |
-
-**Critical rule:** Customers may only set `paymentStatus` to `pending` on create/update. Only admin can set `active`.
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `categoryId` | string | yes | PK e.g. `plumbing` |
+| `name` | string | yes | Plumbing |
+| `icon` | string | no | Icon key / URL |
+| `description` | string | no | |
+| `isActive` | boolean | yes | |
+| `sortOrder` | number | no | |
 
 ---
 
-### 3. `service_requests/{requestId}`
+## 4. `service_requests/{requestId}`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
+Core entity — expanded for production.
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
 | `requestId` | string | yes | Public ticket `NVS-10001` |
-| `userId` | string | yes | Customer UID (immutable) |
-| `category` | enum | yes | See categories below |
-| `issueTitle` | string | yes | Max 120 chars |
-| `description` | string | yes | Max 2000 chars |
-| `location` | string | yes | Flat / tower |
+| `userId` | string | yes | FK → `users` |
+| `categoryId` | string | yes | FK → `service_categories` |
+| `title` | string | yes | Short title (max 120) |
+| `description` | string | yes | Full problem detail |
+| `addressId` | string | yes | FK → `addresses` |
 | `contactPhone` | string | yes | Callback number |
-| `notes` | string | no | Max 500 chars |
 | `priority` | enum | yes | `low` \| `medium` \| `high` \| `emergency` |
-| `scheduledDate` | timestamp | no | Preferred date |
-| `timeSlot` | string | no | e.g. `10:00 AM – 12:00 PM` |
-| `status` | enum | yes | Lifecycle (see below) |
-| `assignedWorkerId` | string | no | `workers/{id}` |
-| `assignedWorkerName` | string | no | Denormalized |
-| `aiAnalysis` | map | no | AI urgency payload |
-| `imageUrls` | array\<string\> | no | Storage URLs |
-| `subscriptionActive` | boolean | yes | Snapshot at submit |
-| `completedAt` | timestamp | no | Resolution time |
-| `cancelledAt` | timestamp | no | If cancelled |
-| `cancelReason` | string | no | Why cancelled |
+| `status` | enum | yes | Lifecycle enum |
+| `scheduledAt` | timestamp | no | Preferred slot start |
+| `timeSlot` | string | no | `10:00 AM – 12:00 PM` |
+| `requestedAt` | timestamp | yes | When submitted |
+| `completedAt` | timestamp | no | |
+| `cancelledAt` | timestamp | no | |
+| `cancelReason` | string | no | |
+| `estimatedCost` | number | no | INR |
+| `finalCost` | number | no | INR after job |
+| `notes` | string | no | Customer notes |
+| `aiAnalysis` | map | no | Urgency AI result |
+| `subscriptionId` | string | no | FK if membership used |
+| `activeAssignmentId` | string | no | Current assignment |
+| `invoiceId` | string | no | FK → `invoices` |
 
-**Categories:** `plumbing`, `electrical`, `cleaning`, `internet_wifi`, `security`, `appliance_repair`, `water_leakage`, `other`
-
-**Status lifecycle**
-
-```
-requested → finding_technician → assigned → in_progress → on_the_way → completed
-                                                                    ↘ cancelled (any stage before completed)
-```
-
-**Subcollection: `service_requests/{id}/status_history/{entryId}`**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `fromStatus` | string | Previous status |
-| `toStatus` | string | New status |
-| `changedBy` | string | UID or `system` |
-| `changedByRole` | enum | `customer` \| `technician` \| `admin` \| `system` |
-| `note` | string | Optional comment |
-| `createdAt` | timestamp | Event time |
+**Status:** `requested` → `finding_technician` → `assigned` → `in_progress` → `on_the_way` → `completed` | `cancelled`
 
 ---
 
-### 4. `workers/{workerId}`
+## 5. `request_assignments/{assignmentId}`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `workerId` | string | yes | Document ID |
-| `name` | string | yes | Full name |
-| `phone` | string | yes | Contact |
-| `type` | enum | yes | `plumber` \| `electrician` \| `general` |
-| `skills` | array\<string\> | no | Skill tags |
-| `rating` | number | no | 0.0–5.0 |
-| `ratingCount` | number | no | Review count |
-| `location` | string | yes | Base area |
-| `serviceAreas` | array\<string\> | no | Coverage zones |
-| `available` | boolean | yes | Accepting jobs |
-| `linkedUserId` | string | no | App login UID |
-| `verified` | boolean | yes | Admin KYC flag |
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `assignmentId` | string | yes | PK |
+| `requestId` | string | yes | FK → `service_requests` |
+| `workerId` | string | yes | FK → `workers` |
+| `assignedAt` | timestamp | yes | |
+| `assignedBy` | string | yes | Admin / system UID |
+| `status` | enum | yes | `active` \| `completed` \| `reassigned` \| `cancelled` |
+| `unassignedAt` | timestamp | no | |
+| `remarks` | string | no | |
 
 ---
 
-### 5. `payments/{paymentId}`
+## 6. `request_images/{imageId}`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `paymentId` | string | yes | Document ID |
-| `userId` | string | yes | Payer (immutable) |
-| `subscriptionId` | string | yes | Usually = userId |
-| `amount` | number | yes | INR |
-| `currency` | string | yes | `INR` |
-| `planType` | enum | yes | `monthly` \| `yearly` |
-| `status` | enum | yes | `pending` \| `verified` \| `failed` \| `refunded` |
-| `method` | enum | yes | `upi_manual` \| `razorpay` |
-| `gatewayReference` | string | no | External txn ID |
-| `idempotencyKey` | string | yes | `{userId}_{planType}_{date}` — prevents duplicates |
-| `proofImageUrl` | string | no | UPI screenshot |
-| `verifiedBy` | string | no | Admin UID |
-| `verifiedAt` | timestamp | no | Verification time |
-| `failureReason` | string | no | If failed |
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `imageId` | string | yes | PK |
+| `requestId` | string | yes | FK |
+| `imageUrl` | string | yes | Storage URL |
+| `uploadedBy` | string | yes | UID |
+| `uploadedAt` | timestamp | yes | |
+| `type` | enum | yes | `before` \| `after` \| `invoice` \| `other` |
+
+*Also available as subcollection: `service_requests/{id}/request_images/{imageId}`*
 
 ---
 
-### 6. `reviews/{reviewId}`
+## 7. `chat_messages/{messageId}`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `reviewId` | string | yes | Document ID |
-| `requestId` | string | yes | Linked ticket |
-| `userId` | string | yes | Reviewer |
-| `workerId` | string | yes | Reviewed worker |
-| `rating` | number | yes | 1–5 |
-| `comment` | string | no | Max 1000 chars |
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `messageId` | string | yes | PK |
+| `requestId` | string | yes | FK |
+| `senderId` | string | yes | UID |
+| `senderRole` | enum | yes | `customer` \| `worker` \| `admin` |
+| `message` | string | yes | |
+| `sentAt` | timestamp | yes | |
+| `status` | enum | yes | `sent` \| `delivered` \| `read` |
+
+*Recommended subcollection: `service_requests/{id}/chat_messages/{messageId}`*
+
+---
+
+## 8. `status_history/{entryId}`
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `entryId` | string | yes | PK |
+| `requestId` | string | yes | FK (required) |
+| `fromStatus` | string | yes | |
+| `toStatus` | string | yes | |
+| `changedBy` | string | yes | UID or `system` |
+| `changedByRole` | enum | yes | `customer` \| `worker` \| `admin` \| `system` |
+| `remarks` | string | no | |
 | `createdAt` | timestamp | yes | |
 
-**Constraint:** One review per `requestId` (enforce in app + Cloud Function).
+*Subcollection: `service_requests/{id}/status_history/{entryId}`*
 
 ---
 
-### 7. `notifications/{notificationId}`
+## 9. `workers/{workerId}`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `userId` | string | yes | Recipient |
-| `type` | enum | yes | `service_update` \| `payment` \| `subscription` \| `system` |
-| `title` | string | yes | |
-| `body` | string | yes | |
-| `data` | map | no | Deep-link payload |
-| `read` | boolean | yes | Default `false` |
-| `expiresAt` | timestamp | no | TTL for cleanup |
-
----
-
-### 8. `app_config/pricing` (singleton)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `monthlyPrice` | number | Default `300` |
-| `yearlyPrice` | number | Default `3600` |
-| `currency` | string | `INR` |
-| `emergencySlaMinutes` | number | Default `120` |
-| `maxOpenRequestsPerUser` | number | Default `3` |
-| `updatedAt` | timestamp | |
-
-Read-only for clients; admin writes via console or admin SDK.
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `workerId` | string | yes | PK |
+| `linkedUserId` | string | no | FK → `users` |
+| `name` | string | yes | |
+| `phone` | string | yes | |
+| `email` | string | no | |
+| `profilePhoto` | string | no | |
+| `type` | enum | yes | `plumber` \| `electrician` \| `general` |
+| `experience` | number | no | Years |
+| `aadhaarVerified` | boolean | yes | |
+| `backgroundVerified` | boolean | yes | |
+| `skills` | array | no | |
+| `serviceAreas` | array | no | |
+| `currentLocation` | geopoint | no | Last known |
+| `available` | boolean | yes | |
+| `rating` | number | no | 0–5 |
+| `ratingCount` | number | no | |
+| `totalJobsCompleted` | number | no | |
+| `avgResponseTimeMinutes` | number | no | |
+| `joinedAt` | timestamp | yes | |
 
 ---
 
-### 9. `counters/service_tickets` (singleton)
+## 10. `worker_location_tracking/{trackingId}`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `lastNumber` | number | Incremented via transaction |
-| `updatedAt` | timestamp | |
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `trackingId` | string | yes | PK |
+| `workerId` | string | yes | FK |
+| `requestId` | string | no | Active job context |
+| `latitude` | number | yes | |
+| `longitude` | number | yes | |
+| `timestamp` | timestamp | yes | |
 
-Generates public IDs: `NVS-{lastNumber}`.
-
----
-
-## Firebase Storage layout
-
-| Path | Max size | Allowed types | Access |
-|------|----------|---------------|--------|
-| `users/{uid}/avatar.jpg` | 2 MB | image/jpeg, image/png | owner read/write |
-| `service_requests/{requestId}/{fileId}.jpg` | 5 MB | image/jpeg, image/png | owner + admin |
-| `payments/{uid}/proof_{paymentId}.jpg` | 5 MB | image/jpeg, image/png | owner + admin |
+TTL: auto-delete entries older than 7 days (Cloud Function).
 
 ---
 
-## Composite indexes
+## 11. `reviews/{reviewId}`
 
-Defined in `firestore.indexes.json` at repo root. Deploy with:
-
-```bash
-firebase deploy --only firestore:indexes,firestore:rules,storage
-```
-
----
-
-## Cloud Functions (recommended for production)
-
-| Function | Trigger | Purpose |
-|----------|---------|---------|
-| `onPaymentVerified` | Admin updates payment | Set subscription `active`, send notification |
-| `expireSubscriptions` | Scheduled daily | Set `paymentStatus: expired` |
-| `onRequestStatusChange` | `service_requests` update | Append `status_history`, notify user |
-| `onReviewCreated` | `reviews` create | Recalculate worker `rating` |
-| `razorpayWebhook` | HTTPS | Verify gateway payments |
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `reviewId` | string | yes | PK |
+| `requestId` | string | yes | FK, unique per request |
+| `userId` | string | yes | FK reviewer |
+| `workerId` | string | yes | FK reviewed worker |
+| `rating` | number | yes | 1–5 |
+| `comment` | string | no | |
+| `createdAt` | timestamp | yes | |
 
 ---
 
-## Migration from current app
+## 12. `payments/{paymentId}`
 
-| Current field | Production field | Action |
-|---------------|------------------|--------|
-| `provider` (Google) | `authProvider` | Write `authProvider`; read both |
-| `paymentStatus: done` | `active` | Map in app layer |
-| Mock service submit | `service_requests` | Use `ServiceRequestRepository` |
-| `demo_workers.dart` | `workers` collection | Seed via admin script |
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `paymentId` | string | yes | PK |
+| `userId` | string | yes | FK payer |
+| `requestId` | string | no | FK for job payment |
+| `subscriptionId` | string | no | FK for membership |
+| `amount` | number | yes | |
+| `currency` | string | yes | `INR` |
+| `status` | enum | yes | `pending` \| `verified` \| `failed` \| `refunded` |
+| `paymentGateway` | enum | yes | `upi_manual` \| `razorpay` \| `stripe` |
+| `gatewayTransactionId` | string | no | |
+| `idempotencyKey` | string | yes | Unique |
+| `paidAt` | timestamp | no | |
+| `invoiceUrl` | string | no | Receipt PDF |
+| `proofImageUrl` | string | no | UPI screenshot |
+
+---
+
+## 13. `invoices/{invoiceId}`
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `invoiceId` | string | yes | PK |
+| `requestId` | string | yes | FK |
+| `userId` | string | yes | FK |
+| `subtotal` | number | yes | |
+| `tax` | number | yes | |
+| `discount` | number | no | |
+| `total` | number | yes | |
+| `pdfUrl` | string | no | |
+| `generatedAt` | timestamp | yes | |
+
+---
+
+## 14. `subscriptions/{subscriptionId}`
+
+**Changed:** `subscriptionId` PK (not `userId`). Users can have multiple historical subscriptions.
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `subscriptionId` | string | yes | PK |
+| `userId` | string | yes | FK |
+| `planId` | string | yes | FK → `membership_plans` |
+| `planType` | enum | yes | `monthly` \| `yearly` |
+| `startDate` | timestamp | yes | |
+| `endDate` | timestamp | yes | |
+| `status` | enum | yes | `pending` \| `active` \| `expired` \| `cancelled` |
+| `autoRenew` | boolean | yes | |
+| `amount` | number | yes | |
+| `currency` | string | yes | |
+| `name` | string | yes | Billing name |
+| `mobile` | string | yes | |
+| `alternateMobile` | string | no | |
+| `addressId` | string | no | FK |
+| `paymentId` | string | no | FK latest payment |
+
+**Migration:** Legacy docs at `subscriptions/{userId}` remain readable; new writes use auto-ID.
+
+---
+
+## 15. `membership_plans/{planId}`
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `planId` | string | yes | PK e.g. `yearly_premium` |
+| `name` | string | yes | NIVASA Annual |
+| `price` | number | yes | |
+| `currency` | string | yes | |
+| `billingCycle` | enum | yes | `monthly` \| `yearly` |
+| `benefits` | array | yes | List of strings |
+| `isActive` | boolean | yes | |
+
+---
+
+## 16. `notifications/{notificationId}`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `notificationId` | string | yes |
+| `userId` | string | yes |
+| `type` | enum | yes |
+| `title` | string | yes |
+| `body` | string | yes |
+| `data` | map | no |
+| `read` | boolean | yes |
+| `expiresAt` | timestamp | no |
+
+---
+
+## 17. `emergency_contacts/{contactId}`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `contactId` | string | yes |
+| `userId` | string | yes |
+| `name` | string | yes |
+| `phone` | string | yes |
+| `relation` | string | yes | Spouse, Parent, etc. |
+
+---
+
+## 18. `support_tickets/{ticketId}`
+
+| Field | Type | Required |
+|-------|------|----------|
+| `ticketId` | string | yes |
+| `userId` | string | yes |
+| `subject` | string | yes |
+| `description` | string | no |
+| `status` | enum | yes | `open` \| `in_progress` \| `resolved` \| `closed` |
+| `priority` | enum | no | |
+| `assignedTo` | string | no | Admin UID |
+
+---
+
+## Relationship matrix
+
+| From | To | Card | Key |
+|------|-----|------|-----|
+| users | addresses | 1:N | userId |
+| users | service_requests | 1:N | userId |
+| users | subscriptions | 1:N | userId |
+| users | payments | 1:N | userId |
+| users | reviews | 1:N | userId |
+| users | emergency_contacts | 1:N | userId |
+| users | support_tickets | 1:N | userId |
+| users | notifications | 1:N | userId |
+| addresses | service_requests | 1:N | addressId |
+| service_categories | service_requests | 1:N | categoryId |
+| service_requests | request_assignments | 1:N | requestId |
+| service_requests | request_images | 1:N | requestId |
+| service_requests | chat_messages | 1:N | requestId |
+| service_requests | status_history | 1:N | requestId |
+| service_requests | reviews | 1:1 | requestId |
+| service_requests | invoices | 1:1 | requestId |
+| service_requests | payments | 1:N | requestId |
+| workers | request_assignments | 1:N | workerId |
+| workers | reviews | 1:N | workerId |
+| workers | worker_location_tracking | 1:N | workerId |
+| membership_plans | subscriptions | 1:N | planId |
+
+---
+
+## Storage paths
+
+| Path | Purpose |
+|------|---------|
+| `users/{uid}/avatar.jpg` | Profile photo |
+| `workers/{workerId}/profile.jpg` | Worker photo |
+| `service_requests/{requestId}/{imageId}.jpg` | Request photos |
+| `invoices/{invoiceId}.pdf` | Invoice PDF |
+| `payments/{uid}/proof_{paymentId}.jpg` | Payment proof |
 
 ---
 
 ## Implementation status
 
-| Artifact | Path | Status |
-|----------|------|--------|
+| Layer | Path | v2 Status |
+|-------|------|-----------|
 | Schema spec | `docs/database-schema.md` | ✅ |
-| Security rules | `firestore.rules` | ✅ Production-hardened |
-| Storage rules | `storage.rules` | ✅ |
+| ER diagram | `docs/database-er-diagram.*` | ✅ |
+| Security rules | `firestore.rules` | ✅ |
 | Indexes | `firestore.indexes.json` | ✅ |
-| Firebase config | `firebase.json` | ✅ |
 | Dart constants | `lib/core/db/` | ✅ |
-| Repositories | `lib/services/repositories/` | ✅ |
+| Repositories | `lib/services/repositories/` | Partial — extend as features ship |
+
+**Schema version:** `kSchemaVersion = 2`

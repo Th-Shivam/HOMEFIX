@@ -1,0 +1,65 @@
+[
+  {
+    "categoryId": "plumbing",
+    "name": "Plumbing",
+    "icon": "plumbing",
+    "description": "Pipes, taps, drainage, water leakage",
+    "isActive": true,
+    "sortOrder": 1,
+    "schemaVersion": 2
+  },
+  {
+    "categoryId": "electrical",
+    "name": "Electrical",
+    "icon": "electrical_services",
+    "description": "Wiring, switches, power issues",
+    "isActive": true,
+    "sortOrder": 2,
+    "schemaVersion": 2
+  },
+  {
+    "categoryId": "cleaning",
+    "name": "Cleaning",
+    "icon": "cleaning_services",
+    "description": "Deep cleaning and maintenance",
+    "isActive": true,
+    "sortOrder": 3,
+    "schemaVersion": 2
+  },
+  {
+    "categoryId": "internet_wifi",
+    "name": "Internet / WiFi",
+    "icon": "wifi",
+    "description": "Router, connectivity issues",
+    "isActive": true,
+    "sortOrder": 4,
+    "schemaVersion": 2
+  },
+  {
+    "categoryId": "security",
+    "name": "Security",
+    "icon": "security",
+    "description": "CCTV, locks, access control",
+    "isActive": true,
+    "sortOrder": 5,
+    "schemaVersion": 2
+  },
+  {
+    "categoryId": "appliance_repair",
+    "name": "Appliance Repair",
+    "icon": "kitchen",
+    "description": "AC, fridge, washing machine",
+    "isActive": true,
+    "sortOrder": 6,
+    "schemaVersion": 2
+  },
+  {
+    "categoryId": "water_leakage",
+    "name": "Water Leakage",
+    "icon": "water_drop",
+    "description": "Emergency leakage response",
+    "isActive": true,
+    "sortOrder": 7,
+    "schemaVersion": 2
+  }
+]

@@ -1,78 +1,228 @@
 erDiagram
-    USERS ||--o| SUBSCRIPTIONS : "has"
+    USERS ||--o{ ADDRESSES : "has"
     USERS ||--o{ SERVICE_REQUESTS : "raises"
-    USERS ||--o{ PAYMENTS : "makes"
-    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ SUBSCRIPTIONS : "subscribes"
+    USERS ||--o{ PAYMENTS : "pays"
     USERS ||--o{ REVIEWS : "writes"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ EMERGENCY_CONTACTS : "has"
+    USERS ||--o{ SUPPORT_TICKETS : "opens"
     USERS |o--o| WORKERS : "linkedUserId"
+
+    ADDRESSES ||--o{ SERVICE_REQUESTS : "at"
+    SERVICE_CATEGORIES ||--o{ SERVICE_REQUESTS : "categorizes"
+    MEMBERSHIP_PLANS ||--o{ SUBSCRIPTIONS : "defines"
+
+    SERVICE_REQUESTS ||--o{ REQUEST_ASSIGNMENTS : "assigned_via"
+    SERVICE_REQUESTS ||--o{ REQUEST_IMAGES : "has"
+    SERVICE_REQUESTS ||--o{ CHAT_MESSAGES : "has"
+    SERVICE_REQUESTS ||--o{ STATUS_HISTORY : "logs"
+    SERVICE_REQUESTS ||--o| REVIEWS : "reviewed"
+    SERVICE_REQUESTS ||--o| INVOICES : "billed"
+    SERVICE_REQUESTS ||--o{ PAYMENTS : "paid_for"
+
+    WORKERS ||--o{ REQUEST_ASSIGNMENTS : "assigned"
+    WORKERS ||--o{ REVIEWS : "rated"
+    WORKERS ||--o{ WORKER_LOCATION_TRACKING : "tracked"
+
     SUBSCRIPTIONS ||--o{ PAYMENTS : "paid_via"
-    WORKERS ||--o{ SERVICE_REQUESTS : "assigned_to"
-    WORKERS ||--o{ REVIEWS : "rated_in"
-    SERVICE_REQUESTS ||--|{ STATUS_HISTORY : "logs"
-    SERVICE_REQUESTS ||--o| REVIEWS : "has"
-    COUNTERS ||--o{ SERVICE_REQUESTS : "ticketId"
-    APP_CONFIG ||--o{ SUBSCRIPTIONS : "pricing"
 
     USERS {
         string uid PK
         string name
         string email
         string phone
+        string defaultAddressId FK
         enum role
         enum authProvider
         timestamp createdAt
     }
 
-    SUBSCRIPTIONS {
-        string userId PK
-        enum planType
-        enum paymentStatus
-        timestamp subscriptionEndDate
-        number amount
+    ADDRESSES {
+        string addressId PK
+        string userId FK
+        string label
+        string houseNumber
+        string street
+        string city
+        string state
+        string pincode
+        number latitude
+        number longitude
+        boolean isDefault
+    }
+
+    SERVICE_CATEGORIES {
+        string categoryId PK
+        string name
+        string icon
+        string description
+        boolean isActive
     }
 
     SERVICE_REQUESTS {
         string requestId UK
         string userId FK
-        string assignedWorkerId FK
-        enum category
-        enum status
+        string categoryId FK
+        string addressId FK
+        string title
+        string description
         enum priority
+        enum status
+        timestamp scheduledAt
+        timestamp requestedAt
+        timestamp completedAt
+        timestamp cancelledAt
+        number estimatedCost
+        number finalCost
+        string notes
+    }
+
+    REQUEST_ASSIGNMENTS {
+        string assignmentId PK
+        string requestId FK
+        string workerId FK
+        timestamp assignedAt
+        string assignedBy
+        enum status
+        string remarks
+    }
+
+    REQUEST_IMAGES {
+        string imageId PK
+        string requestId FK
+        string imageUrl
+        string uploadedBy
+        timestamp uploadedAt
+        enum type
+    }
+
+    CHAT_MESSAGES {
+        string messageId PK
+        string requestId FK
+        string senderId FK
+        string message
+        timestamp sentAt
+        enum status
     }
 
     STATUS_HISTORY {
         string entryId PK
+        string requestId FK
         string fromStatus
         string toStatus
+        string changedBy
+        string remarks
         timestamp createdAt
     }
 
     WORKERS {
         string workerId PK
         string name
-        enum type
+        string phone
+        string email
+        string profilePhoto
+        number experience
+        boolean aadhaarVerified
+        boolean backgroundVerified
+        array skills
+        array serviceAreas
+        geopoint currentLocation
+        number totalJobsCompleted
+        number avgResponseTimeMinutes
+        timestamp joinedAt
         boolean available
         number rating
+    }
+
+    WORKER_LOCATION_TRACKING {
+        string trackingId PK
+        string workerId FK
+        string requestId FK
+        number latitude
+        number longitude
+        timestamp timestamp
+    }
+
+    REVIEWS {
+        string reviewId PK
+        string requestId UK
+        string userId FK
+        string workerId FK
+        number rating
+        string comment
+        timestamp createdAt
     }
 
     PAYMENTS {
         string paymentId PK
         string userId FK
-        string idempotencyKey UK
+        string requestId FK
+        string subscriptionId FK
+        number amount
+        string currency
         enum status
+        enum paymentGateway
+        string gatewayTransactionId
+        timestamp paidAt
+        string invoiceUrl
+    }
+
+    INVOICES {
+        string invoiceId PK
+        string requestId FK
+        string userId FK
+        number subtotal
+        number tax
+        number discount
+        number total
+        string pdfUrl
+        timestamp generatedAt
+    }
+
+    SUBSCRIPTIONS {
+        string subscriptionId PK
+        string userId FK
+        string planId FK
+        enum planType
+        timestamp startDate
+        timestamp endDate
+        enum status
+        boolean autoRenew
         number amount
     }
 
-    REVIEWS {
-        string reviewId PK
-        string requestId FK
-        string workerId FK
-        number rating
+    MEMBERSHIP_PLANS {
+        string planId PK
+        string name
+        number price
+        enum billingCycle
+        array benefits
+        boolean isActive
+    }
+
+    EMERGENCY_CONTACTS {
+        string contactId PK
+        string userId FK
+        string name
+        string phone
+        string relation
+    }
+
+    SUPPORT_TICKETS {
+        string ticketId PK
+        string userId FK
+        string subject
+        enum status
+        timestamp createdAt
     }
 
     NOTIFICATIONS {
         string notificationId PK
         string userId FK
+        enum type
+        string title
+        string body
         boolean read
     }
 

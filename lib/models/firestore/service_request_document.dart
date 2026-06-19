@@ -3,52 +3,52 @@ import '../../core/db/collections.dart';
 import '../../core/db/firestore_mapper.dart';
 import '../../core/db/schema_enums.dart';
 
-/// Production Firestore document for `service_requests/{docId}`.
+/// Production Firestore document for `service_requests/{docId}` (schema v2).
 class ServiceRequestDocument {
   final String docId;
   final String requestId;
   final String userId;
-  final String category;
-  final String issueTitle;
+  final String categoryId;
+  final String title;
   final String description;
-  final String location;
+  final String? addressId;
   final String contactPhone;
   final String notes;
   final String priority;
   final String status;
-  final DateTime? scheduledDate;
+  final DateTime? scheduledAt;
   final String? timeSlot;
-  final String? assignedWorkerId;
-  final String? assignedWorkerName;
+  final DateTime? requestedAt;
   final Map<String, dynamic>? aiAnalysis;
-  final List<String> imageUrls;
-  final bool subscriptionActive;
+  final double? estimatedCost;
+  final double? finalCost;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? completedAt;
+  final DateTime? cancelledAt;
 
   const ServiceRequestDocument({
     required this.docId,
     required this.requestId,
     required this.userId,
-    required this.category,
-    required this.issueTitle,
+    required this.categoryId,
+    required this.title,
     required this.description,
-    required this.location,
+    this.addressId,
     required this.contactPhone,
     this.notes = '',
     required this.priority,
     required this.status,
-    this.scheduledDate,
+    this.scheduledAt,
     this.timeSlot,
-    this.assignedWorkerId,
-    this.assignedWorkerName,
+    this.requestedAt,
     this.aiAnalysis,
-    this.imageUrls = const [],
-    this.subscriptionActive = false,
+    this.estimatedCost,
+    this.finalCost,
     this.createdAt,
     this.updatedAt,
     this.completedAt,
+    this.cancelledAt,
   });
 
   factory ServiceRequestDocument.fromFirestore(
@@ -59,46 +59,53 @@ class ServiceRequestDocument {
       docId: snap.id,
       requestId: FirestoreMapper.readString(data, DbFields.requestId),
       userId: FirestoreMapper.readString(data, DbFields.userId),
-      category: FirestoreMapper.readString(data, DbFields.category),
-      issueTitle: FirestoreMapper.readString(data, DbFields.issueTitle),
+      categoryId: FirestoreMapper.readString(data, DbFields.categoryId,
+          fallback: FirestoreMapper.readString(data, DbFields.category)),
+      title: FirestoreMapper.readString(data, DbFields.title,
+          fallback: FirestoreMapper.readString(data, DbFields.issueTitle)),
       description: FirestoreMapper.readString(data, DbFields.description),
-      location: FirestoreMapper.readString(data, DbFields.location),
+      addressId: data[DbFields.addressIdRef] as String?,
       contactPhone: FirestoreMapper.readString(data, DbFields.contactPhone),
       notes: FirestoreMapper.readString(data, DbFields.notes),
       priority: FirestoreMapper.readString(data, DbFields.priority),
       status: FirestoreMapper.readString(data, DbFields.status),
-      scheduledDate: FirestoreMapper.timestampToDate(data[DbFields.scheduledDate]),
+      scheduledAt: FirestoreMapper.timestampToDate(
+            data[DbFields.scheduledAt] ?? data[DbFields.scheduledDate]),
       timeSlot: data[DbFields.timeSlot] as String?,
-      assignedWorkerId: data[DbFields.assignedWorkerId] as String?,
-      assignedWorkerName: data[DbFields.assignedWorkerName] as String?,
+      requestedAt: FirestoreMapper.timestampToDate(data[DbFields.requestedAt]),
       aiAnalysis: data[DbFields.aiAnalysis] as Map<String, dynamic>?,
-      imageUrls: FirestoreMapper.readStringList(data, DbFields.imageUrls),
-      subscriptionActive: FirestoreMapper.readBool(data, DbFields.subscriptionActive),
+      estimatedCost: (data[DbFields.estimatedCost] as num?)?.toDouble(),
+      finalCost: (data[DbFields.finalCost] as num?)?.toDouble(),
       createdAt: FirestoreMapper.timestampToDate(data[DbFields.createdAt]),
       updatedAt: FirestoreMapper.timestampToDate(data[DbFields.updatedAt]),
       completedAt: FirestoreMapper.timestampToDate(data[DbFields.completedAt]),
+      cancelledAt: FirestoreMapper.timestampToDate(data[DbFields.cancelledAt]),
     );
   }
 
   Map<String, dynamic> toCreateMap() {
+    final now = FieldValue.serverTimestamp();
     return {
       ...FirestoreMapper.baseFields(),
       DbFields.requestId: requestId,
       DbFields.userId: userId,
-      DbFields.category: category,
-      DbFields.issueTitle: issueTitle,
+      DbFields.categoryId: categoryId,
+      DbFields.title: title,
       DbFields.description: description,
-      DbFields.location: location,
+      if (addressId != null) DbFields.addressIdRef: addressId,
       DbFields.contactPhone: contactPhone,
       DbFields.notes: notes,
       DbFields.priority: priority,
       DbFields.status: status,
-      if (scheduledDate != null)
-        DbFields.scheduledDate: Timestamp.fromDate(scheduledDate!),
+      DbFields.requestedAt: now,
+      if (scheduledAt != null)
+        DbFields.scheduledAt: Timestamp.fromDate(scheduledAt!),
       if (timeSlot != null) DbFields.timeSlot: timeSlot,
       if (aiAnalysis != null) DbFields.aiAnalysis: aiAnalysis,
-      DbFields.imageUrls: imageUrls,
-      DbFields.subscriptionActive: subscriptionActive,
+      if (estimatedCost != null) DbFields.estimatedCost: estimatedCost,
+      // legacy compat for existing queries/rules
+      DbFields.category: categoryId,
+      DbFields.issueTitle: title,
     };
   }
 

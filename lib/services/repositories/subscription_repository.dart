@@ -6,7 +6,7 @@ import '../../core/db/firestore_mapper.dart';
 import '../../core/db/schema_enums.dart';
 import '../../models/firestore/payment_document.dart';
 
-/// Production repository for `subscriptions` and `payments`.
+/// Production repository for `subscriptions` (v2) and `payments`.
 class SubscriptionRepository {
   SubscriptionRepository({
     FirebaseFirestore? firestore,
@@ -17,8 +17,12 @@ class SubscriptionRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
-  DocumentReference<Map<String, dynamic>> _subscriptionRef(String uid) =>
-      _firestore.collection(DbCollections.subscriptions).doc(uid);
+  CollectionReference<Map<String, dynamic>> get _subscriptions =>
+      _firestore.collection(DbCollections.subscriptions);
+
+  /// Legacy v1 path: subscriptions/{userId}
+  DocumentReference<Map<String, dynamic>> _legacySubscriptionRef(String uid) =>
+      _subscriptions.doc(uid);
 
   CollectionReference<Map<String, dynamic>> get _payments =>
       _firestore.collection(DbCollections.payments);
@@ -29,7 +33,8 @@ class SubscriptionRepository {
     required String alternateMobile,
     required String address,
     required String planType,
-    String paymentMethod = DbEnums.methodUpiManual,
+    String? addressId,
+    String paymentMethod = DbEnums.gatewayUpiManual,
     String? paymentReference,
   }) async {
     final user = _auth.currentUser;
@@ -46,7 +51,34 @@ class SubscriptionRepository {
         ? startDate.add(const Duration(days: 30))
         : DateTime(startDate.year + 1, startDate.month, startDate.day);
 
-    await _subscriptionRef(user.uid).set({
+    final planId = planType == DbEnums.planMonthly ? 'monthly_standard' : 'yearly_standard';
+
+    // v2: auto-generated subscriptionId, multiple subs per user allowed
+    final v2Ref = _subscriptions.doc();
+    await v2Ref.set({
+      ...FirestoreMapper.baseFields(),
+      DbFields.subscriptionId: v2Ref.id,
+      DbFields.userId: user.uid,
+      DbFields.planId: planId,
+      DbFields.planType: planType,
+      DbFields.name: name.trim(),
+      DbFields.mobile: mobile.trim(),
+      DbFields.alternateMobile: alternateMobile.trim(),
+      DbFields.address: address.trim(),
+      if (addressId != null) DbFields.addressIdRef: addressId,
+      DbFields.email: user.email ?? '',
+      DbFields.amount: amount,
+      DbFields.currency: 'INR',
+      DbFields.startDate: Timestamp.fromDate(startDate),
+      DbFields.endDate: Timestamp.fromDate(endDate),
+      DbFields.status: DbEnums.subPending,
+      DbFields.autoRenew: false,
+      DbFields.paymentMethod: paymentMethod,
+      if (paymentReference != null) DbFields.paymentReference: paymentReference,
+    });
+
+    // v1 legacy mirror for existing splash/pending flow
+    await _legacySubscriptionRef(user.uid).set({
       ...FirestoreMapper.baseFields(),
       DbFields.userId: user.uid,
       DbFields.email: user.email ?? '',
@@ -63,6 +95,7 @@ class SubscriptionRepository {
       DbFields.paymentMethod: paymentMethod,
       if (paymentReference != null) DbFields.paymentReference: paymentReference,
       DbFields.autoRenew: false,
+      DbFields.subscriptionId: v2Ref.id,
     }, SetOptions(merge: true));
   }
 
@@ -70,36 +103,57 @@ class SubscriptionRepository {
     final user = _auth.currentUser;
     if (user == null) return null;
 
-    final doc = await _subscriptionRef(user.uid).get();
-    if (!doc.exists) return null;
-    return doc.data()?[DbFields.paymentStatus] as String?;
+    // Try v2 active subscription first
+    final v2Snap = await _subscriptions
+        .where(DbFields.userId, isEqualTo: user.uid)
+        .where(DbFields.status, isEqualTo: DbEnums.subPending)
+        .limit(1)
+        .get();
+    if (v2Snap.docs.isNotEmpty) {
+      return v2Snap.docs.first.data()[DbFields.status] as String?;
+    }
+
+    // Legacy fallback
+    final legacy = await _legacySubscriptionRef(user.uid).get();
+    if (!legacy.exists) return null;
+    return legacy.data()?[DbFields.paymentStatus] as String?;
   }
 
-  Future<Map<String, dynamic>?> getSubscription() async {
+  Future<Map<String, dynamic>?> getActiveSubscription() async {
     final user = _auth.currentUser;
     if (user == null) return null;
 
-    final doc = await _subscriptionRef(user.uid).get();
-    if (!doc.exists) return null;
-    return doc.data();
+    final v2Snap = await _subscriptions
+        .where(DbFields.userId, isEqualTo: user.uid)
+        .where(DbFields.status, whereIn: [DbEnums.subActive, DbEnums.subPending])
+        .orderBy(DbFields.endDate, descending: true)
+        .limit(1)
+        .get();
+    if (v2Snap.docs.isNotEmpty) return v2Snap.docs.first.data();
+
+    final legacy = await _legacySubscriptionRef(user.uid).get();
+    if (!legacy.exists) return null;
+    return legacy.data();
   }
 
   Future<bool> isSubscriptionActive() async {
-    final data = await getSubscription();
+    final data = await getActiveSubscription();
     if (data == null) return false;
 
-    final status = data[DbFields.paymentStatus] as String?;
+    final status = (data[DbFields.status] ?? data[DbFields.paymentStatus]) as String?;
     if (!DbEnums.isSubscriptionActive(status)) return false;
 
-    final end = FirestoreMapper.timestampToDate(data[DbFields.subscriptionEndDate]);
+    final end = FirestoreMapper.timestampToDate(
+      data[DbFields.endDate] ?? data[DbFields.subscriptionEndDate],
+    );
     if (end == null) return false;
     return DateTime.now().isBefore(end);
   }
 
-  /// Creates an idempotent payment record alongside subscription pending state.
   Future<PaymentDocument> recordPayment({
     required String planType,
-    String method = DbEnums.methodUpiManual,
+    String? subscriptionId,
+    String method = DbEnums.gatewayUpiManual,
     String? proofImageUrl,
   }) async {
     final user = _auth.currentUser;
@@ -124,7 +178,7 @@ class SubscriptionRepository {
     final payment = PaymentDocument(
       paymentId: docRef.id,
       userId: user.uid,
-      subscriptionId: user.uid,
+      subscriptionId: subscriptionId ?? user.uid,
       amount: amount,
       currency: 'INR',
       planType: planType,
@@ -135,7 +189,6 @@ class SubscriptionRepository {
     );
 
     await docRef.set(payment.toCreateMap());
-    final saved = await docRef.get();
-    return PaymentDocument.fromFirestore(saved);
+    return PaymentDocument.fromFirestore((await docRef.get()));
   }
 }

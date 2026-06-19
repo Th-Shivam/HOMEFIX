@@ -1,7 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/subscription_provider.dart';
 import '../services/repositories/service_request_repository.dart';
 
 class ServiceRequestScreen extends StatefulWidget {
@@ -166,7 +164,6 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
 
     setState(() => _isSubmitting = true);
     try {
-      final subProvider = context.read<SubscriptionProvider>();
       final saved = await ServiceRequestRepository().create(
         categoryLabel: _selectedCategory!,
         issueTitle: _issueTitleController.text,
@@ -178,8 +175,6 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen>
         scheduledDate: _selectedDate,
         timeSlot: _selectedTimeSlot,
         aiAnalysis: _aiAnalysisDone ? _aiResult : null,
-        imageUrls: List<String>.from(_uploadedImages),
-        subscriptionActive: subProvider.hasActiveSubscription,
       );
       if (mounted) {
         setState(() => _isSubmitting = false);

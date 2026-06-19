@@ -65,6 +65,40 @@ abstract final class DbEnums {
   static const notifSubscription = 'subscription';
   static const notifSystem = 'system';
 
+  // assignment status
+  static const assignmentActive = 'active';
+  static const assignmentCompleted = 'completed';
+  static const assignmentReassigned = 'reassigned';
+  static const assignmentCancelled = 'cancelled';
+
+  // image types
+  static const imageBefore = 'before';
+  static const imageAfter = 'after';
+  static const imageInvoice = 'invoice';
+  static const imageOther = 'other';
+
+  // chat message status
+  static const msgSent = 'sent';
+  static const msgDelivered = 'delivered';
+  static const msgRead = 'read';
+
+  // subscription status (v2)
+  static const subPending = 'pending';
+  static const subActive = 'active';
+  static const subExpired = 'expired';
+  static const subCancelled = 'cancelled';
+
+  // support ticket status
+  static const supportOpen = 'open';
+  static const supportInProgress = 'in_progress';
+  static const supportResolved = 'resolved';
+  static const supportClosed = 'closed';
+
+  // payment gateways
+  static const gatewayUpiManual = 'upi_manual';
+  static const gatewayRazorpay = 'razorpay';
+  static const gatewayStripe = 'stripe';
+
   /// Maps UI display labels from ServiceRequestScreen to DB values.
   static String categoryFromLabel(String label) {
     switch (label) {
@@ -102,8 +136,8 @@ abstract final class DbEnums {
     }
   }
 
-  /// Active subscription statuses (includes legacy `done`).
-  static const activePaymentStatuses = [paymentActive, paymentDone];
+  /// Active subscription statuses (v2 status + legacy paymentStatus).
+  static const activePaymentStatuses = [paymentActive, paymentDone, subActive];
 
   static bool isSubscriptionActive(String? status) {
     return status != null && activePaymentStatuses.contains(status);
